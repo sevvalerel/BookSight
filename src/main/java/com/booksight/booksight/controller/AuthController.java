@@ -1,5 +1,6 @@
 package com.booksight.booksight.controller;
 
+import com.booksight.booksight.config.JwtUtil;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +13,11 @@ import java.util.Map;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -28,5 +31,14 @@ public class AuthController {
                 "message", "Kayıt başarılı!",
                 "username", user.getUsername()
         ));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String password = request.get("password");
+
+        String token = userService.login(email, password, jwtUtil);
+        return ResponseEntity.ok(Map.of("token", token));
     }
 }

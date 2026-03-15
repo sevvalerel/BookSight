@@ -3,6 +3,7 @@ package com.booksight.booksight.service;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.booksight.booksight.config.JwtUtil;
 
 import java.time.LocalDateTime;
 
@@ -36,5 +37,12 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+    }
+    public String login(String email, String password, JwtUtil jwtUtil) {
+        User user = findByEmail(email);
+        if (!user.getPasswordHash().equals(password)) {
+            throw new RuntimeException("Şifre yanlış!");
+        }
+        return jwtUtil.generateToken(user.getUsername());
     }
 }
