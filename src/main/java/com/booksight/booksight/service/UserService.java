@@ -1,9 +1,10 @@
 package com.booksight.booksight.service;
 
+import com.booksight.booksight.config.JwtUtil;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.booksight.booksight.config.JwtUtil;
 
 import java.time.LocalDateTime;
 
@@ -11,9 +12,11 @@ import java.time.LocalDateTime;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User register(String username, String email, String password) {
@@ -27,7 +30,7 @@ public class UserService {
         User user = User.builder()
                 .username(username)
                 .email(email)
-                .passwordHash(password)
+                .passwordHash(passwordEncoder.encode(password)) // şifreyi hashle
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -38,9 +41,10 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
     }
+
     public String login(String email, String password, JwtUtil jwtUtil) {
         User user = findByEmail(email);
-        if (!user.getPasswordHash().equals(password)) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new RuntimeException("Şifre yanlış!");
         }
         return jwtUtil.generateToken(user.getUsername());

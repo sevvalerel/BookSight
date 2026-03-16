@@ -27,9 +27,12 @@ public class AuthController {
         String password = request.get("password");
 
         User user = userService.register(username, email, password);
+        String token = jwtUtil.generateToken(user.getUsername());
+
         return ResponseEntity.ok(Map.of(
                 "message", "Kayıt başarılı!",
-                "username", user.getUsername()
+                "username", user.getUsername(),
+                "token", token
         ));
     }
 
