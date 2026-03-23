@@ -88,12 +88,6 @@ public class RecommendationService {
 
             result.add(recommendationRepository.save(rec));
         }
-        System.out.println("UserId: " + userId);
-        System.out.println("UserReviews: " + userReviews.size());
-        System.out.println("ReviewedBookIds: " + reviewedBookIds);
-        System.out.println("PreferredGenre: " + preferredGenre);
-        System.out.println("Candidates: " + candidates.size());
-        System.out.println("Recommended: " + recommended.size());
 
         return result;
     }
