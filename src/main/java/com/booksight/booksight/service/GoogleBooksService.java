@@ -2,6 +2,7 @@ package com.booksight.booksight.service;
 
 import com.booksight.booksight.entity.Book;
 import com.booksight.booksight.repository.BookRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -15,53 +16,83 @@ public class GoogleBooksService {
     private final RestTemplate restTemplate;
     private final BookRepository bookRepository;
 
+    @Value("${google.books.api.key}")
+    private String apiKey;
+
+    @Value("${google.books.api.url}")
+    private String apiUrl;
+
     public GoogleBooksService(BookRepository bookRepository) {
         this.restTemplate = new RestTemplate();
         this.bookRepository = bookRepository;
     }
 
     public List<Book> fetchAndSaveTurkishBooks(String query, int maxResults) {
-        String url = "http://digittall.duckdns.org:5010/kitapi/v1/?yazar=" +
-                query.replace(" ", "%20");
+        // intitle: ile sadece başlıkta ara, langRestrict kaldırıldı
+        String url = apiUrl + "/volumes?q=intitle:" + query.replace(" ", "+")
+                + "&maxResults=" + maxResults
+                + "&key=" + apiKey;
 
         Map response = restTemplate.getForObject(url, Map.class);
-
         List<Book> savedBooks = new ArrayList<>();
 
         if (response == null) return savedBooks;
 
-        Integer code = (Integer) response.get("code");
-        if (code == null || code != 200) return savedBooks;
-
-        List<Map> items = (List<Map>) response.get("message");
+        List<Map> items = (List<Map>) response.get("items");
         if (items == null) return savedBooks;
 
-        int count = 0;
         for (Map item : items) {
-            if (count >= maxResults) break;
             try {
-                String title = (String) item.get("kitap_adi");
-                String author = (String) item.get("yazar");
+                Map volumeInfo = (Map) item.get("volumeInfo");
+                if (volumeInfo == null) continue;
 
-                if (title == null || author == null) continue;
+                String title = (String) volumeInfo.get("title");
+                List<String> authors = (List<String>) volumeInfo.get("authors");
+                String author = (authors != null && !authors.isEmpty())
+                        ? authors.get(0) : "Bilinmiyor";
+
+                if (title == null) continue;
+
+                // Zaten varsa atla
                 if (bookRepository.existsByTitleAndAuthor(title, author)) continue;
 
-                List<String> kategoriler = (List<String>) item.get("kategori");
-                String genre = "Roman";
-                if (kategoriler != null) {
-                    genre = kategoriler.stream()
-                            .filter(k -> !k.equals("Kitap"))
-                            .findFirst()
-                            .orElse("Roman");
+                // Kategori
+                List<String> categories = (List<String>) volumeInfo.get("categories");
+                String genre = (categories != null && !categories.isEmpty())
+                        ? categories.get(0) : "Roman";
+
+                // Açıklama
+                String description = (String) volumeInfo.get("description");
+
+                // Yayın yılı
+                Integer year = null;
+                String publishedDate = (String) volumeInfo.get("publishedDate");
+                if (publishedDate != null && publishedDate.length() >= 4) {
+                    try {
+                        year = Integer.parseInt(publishedDate.substring(0, 4));
+                    } catch (Exception ignored) {}
+                }
+
+                // Kapak resmi
+                Map imageLinks = (Map) volumeInfo.get("imageLinks");
+                String coverUrl = null;
+                if (imageLinks != null) {
+                    coverUrl = (String) imageLinks.get("thumbnail");
+                    // http → https
+                    if (coverUrl != null) {
+                        coverUrl = coverUrl.replace("http://", "https://");
+                    }
                 }
 
                 Book book = new Book();
                 book.setTitle(title);
                 book.setAuthor(author);
                 book.setGenre(genre);
+                book.setDescription(description);
+                book.setPublicationYear(year);
+                book.setCoverUrl(coverUrl);
 
                 savedBooks.add(bookRepository.save(book));
-                count++;
 
             } catch (Exception e) { }
         }
