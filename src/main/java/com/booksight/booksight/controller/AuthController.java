@@ -41,7 +41,12 @@ public class AuthController {
         String email = request.get("email");
         String password = request.get("password");
 
+        User user = userService.findByEmail(email);
         String token = userService.login(email, password, jwtUtil);
-        return ResponseEntity.ok(Map.of("token", token));
+
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "username", user.getUsername()
+        ));
     }
 }
