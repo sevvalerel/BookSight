@@ -6,6 +6,7 @@ import com.booksight.booksight.repository.UserRepository;
 import com.booksight.booksight.service.ReviewService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.booksight.booksight.dto.ReviewDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -58,8 +59,18 @@ public class ReviewController {
     }
 
     @GetMapping("/book/{bookId}")
-    public ResponseEntity<List<Review>> getReviewsByBook(@PathVariable Long bookId) {
-        return ResponseEntity.ok(reviewService.getReviewsByBook(bookId));
+    public ResponseEntity<List<ReviewDTO>> getReviewsByBook(@PathVariable Long bookId) {
+        List<Review> reviews = reviewService.getReviewsByBook(bookId);
+        List<ReviewDTO> dtos = reviews.stream()
+                .map(r -> new ReviewDTO(
+                        r.getReviewId(),
+                        r.getReviewText(),
+                        r.getRating(),
+                        r.getUser().getUsername(),
+                        r.getCreatedAt().toString()
+                ))
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     private Long getUserIdFromToken(String authHeader) {
