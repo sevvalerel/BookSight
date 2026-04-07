@@ -75,7 +75,7 @@ public class BookServiceTest {
         Book book = new Book();
         book.setTitle("Suç ve Ceza");
 
-        when(bookRepository.findByTitleContainingIgnoreCase("Suç"))
+        when(bookRepository.searchBooks("Suç"))
                 .thenReturn(List.of(book));
 
         // ACT
