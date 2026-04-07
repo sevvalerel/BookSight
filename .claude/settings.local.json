@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//usr/lib/jvm/java-17-openjdk-amd64/bin/**)",
+      "Read(//usr/lib/jvm/openjdk-17/bin/**)"
+    ]
+  }
+}
