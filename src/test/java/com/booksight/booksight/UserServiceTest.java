@@ -51,11 +51,12 @@ public class UserServiceTest {
     }
 
     @Test
-    void findByEmail_kullanici_bulunamazsa_hata_vermeli() {
+    void findByEmailOrUsername_kullanici_bulunamazsa_hata_vermeli() {
         when(userRepository.findByEmail("yok@test.com")).thenReturn(Optional.empty());
+        when(userRepository.findByUsername("yok@test.com")).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () ->
-                userService.findByEmail("yok@test.com")
+                userService.findByEmailOrUsername("yok@test.com")
         );
     }
 }

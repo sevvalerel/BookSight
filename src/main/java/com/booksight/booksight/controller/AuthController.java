@@ -38,11 +38,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
+        String emailOrUsername = request.get("email");
         String password = request.get("password");
 
-        User user = userService.findByEmail(email);
-        String token = userService.login(email, password, jwtUtil);
+        User user = userService.findByEmailOrUsername(emailOrUsername);
+        String token = userService.loginWithUser(user, password, jwtUtil);
 
         return ResponseEntity.ok(Map.of(
                 "token", token,

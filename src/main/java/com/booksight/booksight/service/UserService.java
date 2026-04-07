@@ -37,13 +37,20 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+    public User findByEmailOrUsername(String emailOrUsername) {
+        return userRepository.findByEmail(emailOrUsername)
+                .orElseGet(() -> userRepository.findByUsername(emailOrUsername)
+                        .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!")));
+    }
+    public String loginWithUser(User user, String password, JwtUtil jwtUtil) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new RuntimeException("Şifre yanlış!");
+        }
+        return jwtUtil.generateToken(user.getUsername());
     }
 
     public String login(String email, String password, JwtUtil jwtUtil) {
-        User user = findByEmail(email);
+        User user = findByEmailOrUsername(email);
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new RuntimeException("Şifre yanlış!");
         }
