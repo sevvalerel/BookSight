@@ -72,6 +72,22 @@ public class ReviewController {
                 .toList();
         return ResponseEntity.ok(dtos);
     }
+    @GetMapping("/my")
+    public ResponseEntity<List<ReviewDTO>> getMyReviews(
+            @RequestHeader("Authorization") String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        List<Review> reviews = reviewService.getReviewsByUser(userId);
+        List<ReviewDTO> dtos = reviews.stream()
+                .map(r -> new ReviewDTO(
+                        r.getReviewId(),
+                        r.getReviewText(),
+                        r.getRating(),
+                        r.getUser().getUsername(),
+                        r.getCreatedAt().toString()
+                ))
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
 
     private Long getUserIdFromToken(String authHeader) {
         String token = authHeader.replace("Bearer ", "");

@@ -25,6 +25,9 @@ public class ReviewService {
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
     }
+    public List<Review> getReviewsByUser(Long userId) {
+        return reviewRepository.findByUserUserIdOrderByCreatedAtDesc(userId);
+    }
 
     public Review createReview(Long userId, Long bookId, String reviewText, Integer rating) {
         if (reviewRepository.existsByUserUserIdAndBookBookId(userId, bookId)) {

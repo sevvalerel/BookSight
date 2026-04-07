@@ -19,7 +19,7 @@ public class BookService {
         if (search != null && !search.isBlank() && genre != null && !genre.isBlank()) {
             return bookRepository.findByTitleContainingIgnoreCaseAndGenreContainingIgnoreCase(search, genre);
         } else if (search != null && !search.isBlank()) {
-            return bookRepository.findByTitleContainingIgnoreCase(search);
+            return bookRepository.searchBooks(search);  // ← BURAYA
         } else if (genre != null && !genre.isBlank()) {
             return bookRepository.findByGenreContainingIgnoreCase(genre);
         }
