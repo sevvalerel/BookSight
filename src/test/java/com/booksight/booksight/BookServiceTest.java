@@ -124,6 +124,72 @@ public class BookServiceTest {
         assertEquals("1984", result.getTitle());
         verify(bookRepository).save(book);
     }
+    @Test
+    void getAllBooks_sadece_genre_var_tureDonmeli() {
+        Book book = new Book();
+        book.setTitle("Suç ve Ceza");
+        book.setGenre("Klasik");
+
+        when(bookRepository.findByGenreContainingIgnoreCase("Klasik"))
+                .thenReturn(List.of(book));
+
+        List<Book> result = bookService.getAllBooks(null, "Klasik");
+
+        assertEquals(1, result.size());
+        assertEquals("Klasik", result.get(0).getGenre());
+    }
+
+    @Test
+    void getAllBooks_searchVeGenreVar_ikiliFiltreleme() {
+        Book book = new Book();
+        book.setTitle("Suç ve Ceza");
+        book.setGenre("Klasik");
+
+        when(bookRepository.findByTitleContainingIgnoreCaseAndGenreContainingIgnoreCase("Suç", "Klasik"))
+                .thenReturn(List.of(book));
+
+        List<Book> result = bookService.getAllBooks("Suç", "Klasik");
+
+        assertEquals(1, result.size());
+        assertEquals("Suç ve Ceza", result.get(0).getTitle());
+    }
+
+    @Test
+    void updateBook_varolanKitap_guncellenmeli() {
+        Book existing = new Book();
+        existing.setBookId(1L);
+        existing.setTitle("Eski Başlık");
+        existing.setAuthor("Eski Yazar");
+
+        Book updated = new Book();
+        updated.setTitle("Yeni Başlık");
+        updated.setAuthor("Yeni Yazar");
+        updated.setGenre("Roman");
+        updated.setPublicationYear(2020);
+        updated.setDescription("Yeni açıklama");
+
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(bookRepository.save(any(Book.class))).thenAnswer(i -> i.getArgument(0));
+
+        Book result = bookService.updateBook(1L, updated);
+
+        assertEquals("Yeni Başlık", result.getTitle());
+        assertEquals("Yeni Yazar", result.getAuthor());
+        verify(bookRepository).save(existing);
+    }
+
+    @Test
+    void updateBook_olmayanKitap_hataDonmeli() {
+        when(bookRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Book updated = new Book();
+        updated.setTitle("Başlık");
+
+        assertThrows(RuntimeException.class, () ->
+                bookService.updateBook(99L, updated)
+        );
+        verify(bookRepository, never()).save(any());
+    }
 
 
 }
