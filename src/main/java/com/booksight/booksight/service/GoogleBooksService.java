@@ -28,8 +28,8 @@ public class GoogleBooksService {
     }
 
     public List<Book> fetchAndSaveTurkishBooks(String query, int maxResults) {
-        // intitle: ile sadece başlıkta ara, langRestrict kaldırıldı
         String url = apiUrl + "/volumes?q=intitle:" + query.replace(" ", "+")
+                + "&langRestrict=tr"
                 + "&maxResults=" + maxResults
                 + "&key=" + apiKey;
 
@@ -53,18 +53,14 @@ public class GoogleBooksService {
 
                 if (title == null) continue;
 
-                // Zaten varsa atla
                 if (bookRepository.existsByTitleAndAuthor(title, author)) continue;
 
-                // Kategori
                 List<String> categories = (List<String>) volumeInfo.get("categories");
                 String genre = (categories != null && !categories.isEmpty())
                         ? categories.get(0) : "Roman";
 
-                // Açıklama
                 String description = (String) volumeInfo.get("description");
 
-                // Yayın yılı
                 Integer year = null;
                 String publishedDate = (String) volumeInfo.get("publishedDate");
                 if (publishedDate != null && publishedDate.length() >= 4) {
@@ -73,14 +69,17 @@ public class GoogleBooksService {
                     } catch (Exception ignored) {}
                 }
 
-                // Kapak resmi
                 Map imageLinks = (Map) volumeInfo.get("imageLinks");
                 String coverUrl = null;
                 if (imageLinks != null) {
                     coverUrl = (String) imageLinks.get("thumbnail");
-                    // http → https
+                    if (coverUrl == null) {
+                        coverUrl = (String) imageLinks.get("smallThumbnail");
+                    }
                     if (coverUrl != null) {
                         coverUrl = coverUrl.replace("http://", "https://");
+                        coverUrl = coverUrl.replace("&zoom=1", "&zoom=0");
+                        coverUrl = coverUrl.replace("zoom=1", "zoom=0");
                     }
                 }
 
