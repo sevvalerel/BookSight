@@ -30,4 +30,10 @@ public class User {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(length = 500)
+    private String bio;
+
+    @Column(length = 500)
+    private String avatarUrl;
 }
