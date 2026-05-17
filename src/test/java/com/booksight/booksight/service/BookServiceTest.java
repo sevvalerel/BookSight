@@ -1,8 +1,7 @@
-package com.booksight.booksight;
+package com.booksight.booksight.service;
 
 import com.booksight.booksight.entity.Book;
 import com.booksight.booksight.repository.BookRepository;
-import com.booksight.booksight.service.BookService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

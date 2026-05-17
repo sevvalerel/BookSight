@@ -1,4 +1,4 @@
-package com.booksight.booksight;
+package com.booksight.booksight.service;
 
 import com.booksight.booksight.entity.Book;
 import com.booksight.booksight.entity.Review;
@@ -6,7 +6,6 @@ import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.BookRepository;
 import com.booksight.booksight.repository.ReviewRepository;
 import com.booksight.booksight.repository.UserRepository;
-import com.booksight.booksight.service.ReviewService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -280,5 +279,105 @@ public class ReviewServiceTest {
         assertThrows(RuntimeException.class, () ->
                 reviewService.updateReview(5L, 1L, "Kısa", 4)
         );
+    }
+    @Test
+    void getReviewsByUser_yorumlarDonmeli() {
+        User user = createUser(1L, "sevval");
+        Book book = createBook(10L, "1984");
+        Review r1 = createReview(1L, user, book, "Birinci yorum metni buraya yazıldı.", 5);
+
+        when(reviewRepository.findByUserUserIdOrderByCreatedAtDesc(1L))
+                .thenReturn(List.of(r1));
+
+        List<Review> result = reviewService.getReviewsByUser(1L);
+
+        assertEquals(1, result.size());
+        verify(reviewRepository).findByUserUserIdOrderByCreatedAtDesc(1L);
+    }
+
+    @Test
+    void getReviewsByUser_yorumYok_bosListeDonmeli() {
+        when(reviewRepository.findByUserUserIdOrderByCreatedAtDesc(1L))
+                .thenReturn(List.of());
+
+        List<Review> result = reviewService.getReviewsByUser(1L);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void createReview_kitapBulunamazsa_hataDonmeli() {
+        String uzunYorum = "Bu kitap gerçekten çok etkileyici bir eserdi. Yazar karakterleri çok iyi işlemiş. " +
+                "Kesinlikle okunması gereken kitaplar listesine alındı, tavsiye ederim herkese.";
+        User user = createUser(1L, "sevval");
+
+        when(reviewRepository.existsByUserUserIdAndBookBookId(1L, 99L)).thenReturn(false);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () ->
+                reviewService.createReview(1L, 99L, uzunYorum, 3)
+        );
+    }
+
+    @Test
+    void createReview_ratingBesten_buyuk_hataDonmeli() {
+        String uzunYorum = "Bu kitap gerçekten çok etkileyici bir eserdi. Yazar karakterleri çok iyi işlemiş. " +
+                "Kesinlikle okunması gereken kitaplar listesine alındı, tavsiye ederim herkese.";
+
+        when(reviewRepository.existsByUserUserIdAndBookBookId(1L, 10L)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                reviewService.createReview(1L, 10L, uzunYorum, 6)
+        );
+        assertTrue(ex.getMessage().contains("1 ile 5"));
+    }
+
+    @Test
+    void updateReview_ratingBesten_buyuk_hataDonmeli() {
+        User user = createUser(1L, "sevval");
+        Book book = createBook(10L, "1984");
+        Review review = createReview(5L, user, book, "Eski yorum metni uzunca yazılmış buraya", 3);
+        String uzunYorum = "Bu kitap gerçekten çok etkileyici bir eserdi. Yazar karakterleri çok iyi işlemiş. " +
+                "Kesinlikle okunması gereken kitaplar listesine alındı, tavsiye ederim herkese.";
+
+        when(reviewRepository.findById(5L)).thenReturn(Optional.of(review));
+
+        assertThrows(RuntimeException.class, () ->
+                reviewService.updateReview(5L, 1L, uzunYorum, 6)
+        );
+    }
+
+    @Test
+    void updateReview_olmayanYorum_hataDonmeli() {
+        when(reviewRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () ->
+                reviewService.updateReview(999L, 1L, "Yorum metni", 3)
+        );
+    }
+
+    @Test
+    void createReview_updateBookRating_yorumVarken_avgHesaplanmali() {
+        String uzunYorum = "Bu kitap gerçekten çok etkileyici bir eserdi. Yazar karakterleri çok iyi işlemiş. " +
+                "Kesinlikle okunması gereken kitaplar listesine alındı, tavsiye ederim herkese.";
+        User user = createUser(1L, "sevval");
+        Book book = createBook(10L, "1984");
+
+        Review mevcutReview = createReview(1L, user, book, uzunYorum, 4);
+
+        when(reviewRepository.existsByUserUserIdAndBookBookId(1L, 10L)).thenReturn(false);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookRepository.findById(10L)).thenReturn(Optional.of(book));
+        when(reviewRepository.save(any(Review.class))).thenAnswer(i -> i.getArgument(0));
+        when(reviewRepository.findByBookBookIdOrderByCreatedAtDesc(10L))
+                .thenReturn(List.of(mevcutReview));
+
+        reviewService.createReview(1L, 10L, uzunYorum, 4);
+
+        assertEquals(4.0, book.getAvgRating());
+        assertEquals(1, book.getReviewCount());
+        verify(bookRepository).save(book);
     }
 }

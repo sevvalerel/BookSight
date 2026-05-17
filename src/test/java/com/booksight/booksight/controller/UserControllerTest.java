@@ -1,7 +1,6 @@
-package com.booksight.booksight;
+package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
-import com.booksight.booksight.controller.UserController;
 import com.booksight.booksight.dto.UserDTO;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.UserRepository;
