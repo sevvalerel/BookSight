@@ -42,6 +42,7 @@ public class BookService {
         existing.setGenre(updatedBook.getGenre());
         existing.setPublicationYear(updatedBook.getPublicationYear());
         existing.setDescription(updatedBook.getDescription());
+        existing.setCoverUrl(updatedBook.getCoverUrl());
         return bookRepository.save(existing);
     }
 
