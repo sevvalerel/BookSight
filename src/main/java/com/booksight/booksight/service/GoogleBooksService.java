@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,5 +99,37 @@ public class GoogleBooksService {
         }
 
         return savedBooks;
+    }
+
+    public String fetchCoverUrl(String title, String author) {
+        try {
+            String encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8);
+            String encodedAuthor = URLEncoder.encode(author, StandardCharsets.UTF_8);
+            String url = apiUrl + "/volumes?q=intitle:" + encodedTitle
+                    + "+inauthor:" + encodedAuthor
+                    + "&maxResults=1&key=" + apiKey;
+
+            Map response = restTemplate.getForObject(url, Map.class);
+            if (response == null) return null;
+
+            List<Map> items = (List<Map>) response.get("items");
+            if (items == null || items.isEmpty()) return null;
+
+            Map volumeInfo = (Map) items.get(0).get("volumeInfo");
+            if (volumeInfo == null) return null;
+
+            Map imageLinks = (Map) volumeInfo.get("imageLinks");
+            if (imageLinks == null) return null;
+
+            String coverUrl = (String) imageLinks.get("thumbnail");
+            if (coverUrl == null) return null;
+
+            coverUrl = coverUrl.replace("http://", "https://");
+            coverUrl = coverUrl.replace("zoom=1", "zoom=2");
+
+            return coverUrl;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

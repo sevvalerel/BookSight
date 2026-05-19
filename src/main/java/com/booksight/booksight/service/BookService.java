@@ -4,26 +4,42 @@ import com.booksight.booksight.entity.Book;
 import com.booksight.booksight.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 @Service
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final GoogleBooksService googleBooksService;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, GoogleBooksService googleBooksService) {
         this.bookRepository = bookRepository;
+        this.googleBooksService = googleBooksService;
     }
 
-    public List<Book> getAllBooks(String search, String genre) {
-        if (search != null && !search.isBlank() && genre != null && !genre.isBlank()) {
-            return bookRepository.findByTitleContainingIgnoreCaseAndGenreContainingIgnoreCase(search, genre);
-        } else if (search != null && !search.isBlank()) {
-            return bookRepository.searchBooks(search);  // ← BURAYA
+    public Map<String, Object> getAllBooks(String search, String genre, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> bookPage;
+
+        if (search != null && !search.isBlank()) {
+            bookPage = bookRepository.searchBooks(search, pageable);
         } else if (genre != null && !genre.isBlank()) {
-            return bookRepository.findByGenreContainingIgnoreCase(genre);
+            bookPage = bookRepository.findByGenreContainingIgnoreCase(genre, pageable);
+        } else {
+            bookPage = bookRepository.findAll(pageable);
         }
-        return bookRepository.findAll();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", bookPage.getContent());
+        response.put("totalElements", bookPage.getTotalElements());
+        response.put("totalPages", bookPage.getTotalPages());
+        response.put("currentPage", page);
+        response.put("hasNext", bookPage.hasNext());
+        return response;
     }
 
     public Book getBookById(Long id) {
@@ -51,5 +67,33 @@ public class BookService {
             throw new RuntimeException("Kitap bulunamadı!");
         }
         bookRepository.deleteById(id);
+    }
+
+    public Map<String, Integer> refreshAllCovers() {
+        List<Book> books = bookRepository.findBooksWithoutCover();
+        int updated = 0;
+        int notFound = 0;
+
+        for (Book book : books) {
+            String coverUrl = googleBooksService.fetchCoverUrl(book.getTitle(), book.getAuthor());
+            if (coverUrl != null) {
+                book.setCoverUrl(coverUrl);
+                bookRepository.save(book);
+                updated++;
+            } else {
+                notFound++;
+            }
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("updated", updated);
+        result.put("notFound", notFound);
+        return result;
     }
 }

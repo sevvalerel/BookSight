@@ -20,6 +20,9 @@ public class BookServiceTest {
     @Mock
     private BookRepository bookRepository;
 
+    @Mock
+    private GoogleBooksService googleBooksService;
+
     @InjectMocks
     private BookService bookService;
 
