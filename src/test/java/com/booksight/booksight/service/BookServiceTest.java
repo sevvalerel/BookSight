@@ -7,11 +7,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,125 +40,109 @@ public class BookServiceTest {
 
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
 
-        // ACT
         Book result = bookService.getBookById(1L);
 
-        // ASSERT
         assertNotNull(result);
         assertEquals("Suç ve Ceza", result.getTitle());
         assertEquals("Dostoyevski", result.getAuthor());
-
     }
+
     @Test
     void getBookById_olmayanId_hataDonmeli() {
-        // ARRANGE
         when(bookRepository.findById(99L)).thenReturn(Optional.empty());
 
-        // ACT & ASSERT
-        assertThrows(RuntimeException.class, () ->
-                bookService.getBookById(99L)
-        );
+        assertThrows(RuntimeException.class, () -> bookService.getBookById(99L));
     }
+
     @Test
     void getAllBooks_herIkiParametreNull_tumKitaplarDonmeli() {
-        // ARRANGE
         Book book1 = new Book();
         book1.setTitle("Suç ve Ceza");
         Book book2 = new Book();
         book2.setTitle("1984");
 
-        when(bookRepository.findAll()).thenReturn(List.of(book1, book2));
+        Page<Book> page = new PageImpl<>(List.of(book1, book2));
+        when(bookRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        // ACT
-        List<Book> result = bookService.getAllBooks(null, null);
+        Map<String, Object> result = bookService.getAllBooks(null, null, 0, 20);
 
-        // ASSERT
-        assertEquals(2, result.size());
+        assertEquals(2, ((List<?>) result.get("content")).size());
+        assertEquals(false, result.get("hasNext"));
     }
 
     @Test
     void getAllBooks_sadeceSaarchVar_basligaGoreFiltreler() {
-        // ARRANGE
         Book book = new Book();
         book.setTitle("Suç ve Ceza");
 
-        when(bookRepository.searchBooks("Suç"))
-                .thenReturn(List.of(book));
+        Page<Book> page = new PageImpl<>(List.of(book));
+        when(bookRepository.searchBooks(eq("Suç"), any(Pageable.class))).thenReturn(page);
 
-        // ACT
-        List<Book> result = bookService.getAllBooks("Suç", null);
+        Map<String, Object> result = bookService.getAllBooks("Suç", null, 0, 20);
 
-        // ASSERT
-        assertEquals(1, result.size());
-        assertEquals("Suç ve Ceza", result.get(0).getTitle());
-    }
-    @Test
-    void deleteBook_varolanKitap_silinmeli() {
-        // ARRANGE
-        when(bookRepository.existsById(1L)).thenReturn(true);
-
-        // ACT
-        bookService.deleteBook(1L);
-
-        // ASSERT
-        verify(bookRepository).deleteById(1L);
+        assertEquals(1, ((List<?>) result.get("content")).size());
+        assertEquals("Suç ve Ceza", ((List<Book>) result.get("content")).get(0).getTitle());
     }
 
-    @Test
-    void deleteBook_olmayanKitap_hataDonmeli() {
-        // ARRANGE
-        when(bookRepository.existsById(99L)).thenReturn(false);
-
-        // ACT & ASSERT
-        assertThrows(RuntimeException.class, () ->
-                bookService.deleteBook(99L)
-        );
-    }
-    @Test
-    void createBook_gecerliKitap_kaydedilmeli() {
-        // ARRANGE
-        Book book = new Book();
-        book.setTitle("1984");
-        book.setAuthor("George Orwell");
-
-        when(bookRepository.save(book)).thenReturn(book);
-
-        // ACT
-        Book result = bookService.createBook(book);
-
-        // ASSERT
-        assertNotNull(result);
-        assertEquals("1984", result.getTitle());
-        verify(bookRepository).save(book);
-    }
     @Test
     void getAllBooks_sadece_genre_var_tureDonmeli() {
         Book book = new Book();
         book.setTitle("Suç ve Ceza");
         book.setGenre("Klasik");
 
-        when(bookRepository.findByGenreContainingIgnoreCase("Klasik"))
-                .thenReturn(List.of(book));
+        Page<Book> page = new PageImpl<>(List.of(book));
+        when(bookRepository.findByGenreContainingIgnoreCase(eq("Klasik"), any(Pageable.class)))
+                .thenReturn(page);
 
-        List<Book> result = bookService.getAllBooks(null, "Klasik");
+        Map<String, Object> result = bookService.getAllBooks(null, "Klasik", 0, 20);
 
-        assertEquals(1, result.size());
-        assertEquals("Klasik", result.get(0).getGenre());
+        assertEquals(1, ((List<?>) result.get("content")).size());
+        assertEquals("Klasik", ((List<Book>) result.get("content")).get(0).getGenre());
     }
 
     @Test
-    void getAllBooks_searchVeGenreVar_ikiliFiltreleme() {
+    void getAllBooks_searchVeGenreVar_searchOncelikli() {
         Book book = new Book();
         book.setTitle("Suç ve Ceza");
         book.setGenre("Klasik");
 
-        when(bookRepository.findByTitleContainingIgnoreCaseAndGenreContainingIgnoreCase("Suç", "Klasik"))
-                .thenReturn(List.of(book));
+        Page<Book> page = new PageImpl<>(List.of(book));
+        when(bookRepository.searchBooks(eq("Suç"), any(Pageable.class))).thenReturn(page);
 
-        List<Book> result = bookService.getAllBooks("Suç", "Klasik");
+        Map<String, Object> result = bookService.getAllBooks("Suç", "Klasik", 0, 20);
 
-        assertEquals(1, result.size());
-        assertEquals("Suç ve Ceza", result.get(0).getTitle());
+        assertEquals(1, ((List<?>) result.get("content")).size());
+    }
+
+    @Test
+    void deleteBook_varolanKitap_silinmeli() {
+        when(bookRepository.existsById(1L)).thenReturn(true);
+
+        bookService.deleteBook(1L);
+
+        verify(bookRepository).deleteById(1L);
+    }
+
+    @Test
+    void deleteBook_olmayanKitap_hataDonmeli() {
+        when(bookRepository.existsById(99L)).thenReturn(false);
+
+        assertThrows(RuntimeException.class, () -> bookService.deleteBook(99L));
+    }
+
+    @Test
+    void createBook_gecerliKitap_kaydedilmeli() {
+        Book book = new Book();
+        book.setTitle("1984");
+        book.setAuthor("George Orwell");
+
+        when(bookRepository.save(book)).thenReturn(book);
+
+        Book result = bookService.createBook(book);
+
+        assertNotNull(result);
+        assertEquals("1984", result.getTitle());
+        verify(bookRepository).save(book);
     }
 
     @Test
@@ -187,11 +176,7 @@ public class BookServiceTest {
         Book updated = new Book();
         updated.setTitle("Başlık");
 
-        assertThrows(RuntimeException.class, () ->
-                bookService.updateBook(99L, updated)
-        );
+        assertThrows(RuntimeException.class, () -> bookService.updateBook(99L, updated));
         verify(bookRepository, never()).save(any());
     }
-
-
 }

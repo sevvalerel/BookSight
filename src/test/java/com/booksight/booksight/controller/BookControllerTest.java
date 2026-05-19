@@ -33,49 +33,62 @@ class BookControllerTest {
         return book;
     }
 
+    private Map<String, Object> makePageResponse(List<Book> books) {
+        return Map.of(
+                "content", books,
+                "hasNext", false,
+                "totalElements", (long) books.size(),
+                "totalPages", 1,
+                "currentPage", 0
+        );
+    }
+
     @Test
     void getAllBooks_parametreSiz_tumKitaplarDonmeli() {
-        when(bookService.getAllBooks(null, null))
-                .thenReturn(List.of(makeBook(1L, "Suç ve Ceza", "Klasik")));
+        when(bookService.getAllBooks(null, null, 0, 20))
+                .thenReturn(makePageResponse(List.of(makeBook(1L, "Suç ve Ceza", "Klasik"))));
 
-        ResponseEntity<List<Book>> response = bookController.getAllBooks(null, null);
+        ResponseEntity<Map<String, Object>> response = bookController.getAllBooks(null, null, 0, 20);
 
         assertEquals(200, response.getStatusCode().value());
-        assertEquals(1, response.getBody().size());
-        assertEquals("Suç ve Ceza", response.getBody().get(0).getTitle());
+        List<?> content = (List<?>) response.getBody().get("content");
+        assertEquals(1, content.size());
     }
 
     @Test
     void getAllBooks_searchIle_filtrelenmisKitaplarDonmeli() {
-        when(bookService.getAllBooks("suc", null))
-                .thenReturn(List.of(makeBook(1L, "Suç ve Ceza", "Klasik")));
+        when(bookService.getAllBooks("suc", null, 0, 20))
+                .thenReturn(makePageResponse(List.of(makeBook(1L, "Suç ve Ceza", "Klasik"))));
 
-        ResponseEntity<List<Book>> response = bookController.getAllBooks("suc", null);
+        ResponseEntity<Map<String, Object>> response = bookController.getAllBooks("suc", null, 0, 20);
 
         assertEquals(200, response.getStatusCode().value());
-        assertEquals(1, response.getBody().size());
+        List<?> content = (List<?>) response.getBody().get("content");
+        assertEquals(1, content.size());
     }
 
     @Test
     void getAllBooks_genreIle_filtrelenmisKitaplarDonmeli() {
-        when(bookService.getAllBooks(null, "Roman"))
-                .thenReturn(List.of(makeBook(1L, "Roman Kitap", "Roman")));
+        when(bookService.getAllBooks(null, "Roman", 0, 20))
+                .thenReturn(makePageResponse(List.of(makeBook(1L, "Roman Kitap", "Roman"))));
 
-        ResponseEntity<List<Book>> response = bookController.getAllBooks(null, "Roman");
+        ResponseEntity<Map<String, Object>> response = bookController.getAllBooks(null, "Roman", 0, 20);
 
         assertEquals(200, response.getStatusCode().value());
-        assertEquals("Roman", response.getBody().get(0).getGenre());
+        List<Book> content = (List<Book>) response.getBody().get("content");
+        assertEquals("Roman", content.get(0).getGenre());
     }
 
     @Test
     void getAllBooks_searchVeGenre_filtrelenmisKitaplarDonmeli() {
-        when(bookService.getAllBooks("Suç", "Klasik"))
-                .thenReturn(List.of(makeBook(1L, "Suç ve Ceza", "Klasik")));
+        when(bookService.getAllBooks("Suç", "Klasik", 0, 20))
+                .thenReturn(makePageResponse(List.of(makeBook(1L, "Suç ve Ceza", "Klasik"))));
 
-        ResponseEntity<List<Book>> response = bookController.getAllBooks("Suç", "Klasik");
+        ResponseEntity<Map<String, Object>> response = bookController.getAllBooks("Suç", "Klasik", 0, 20);
 
         assertEquals(200, response.getStatusCode().value());
-        assertEquals(1, response.getBody().size());
+        List<?> content = (List<?>) response.getBody().get("content");
+        assertEquals(1, content.size());
     }
 
     @Test
