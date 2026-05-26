@@ -17,13 +17,16 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final RecommendationService recommendationService;
 
     public ReviewService(ReviewRepository reviewRepository,
                          BookRepository bookRepository,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         RecommendationService recommendationService) {
         this.reviewRepository = reviewRepository;
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.recommendationService = recommendationService;
     }
     public List<Review> getReviewsByUser(Long userId) {
         return reviewRepository.findByUserUserIdOrderByCreatedAtDesc(userId);
@@ -56,6 +59,9 @@ public class ReviewService {
 
         Review saved = reviewRepository.save(review);
         updateBookRating(book);
+        if (Boolean.TRUE.equals(saved.getIsAnalysisEnabled())) {
+            recommendationService.analyzeAndSave(saved);
+        }
         return saved;
     }
 
