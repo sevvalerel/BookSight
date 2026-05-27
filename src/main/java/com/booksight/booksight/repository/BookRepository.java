@@ -21,8 +21,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query(value = "SELECT * FROM books WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))", nativeQuery = true)
     List<Book> searchBooks(@Param("search") String search);
 
-    @Query("SELECT b FROM Book b WHERE b.coverUrl IS NULL OR b.coverUrl = ''")
-    List<Book> findBooksWithoutCover();
     @Query(value = "SELECT * FROM books WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))",
             countQuery = "SELECT count(*) FROM books WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))",
             nativeQuery = true)

@@ -5,7 +5,6 @@ import com.booksight.booksight.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,11 +13,9 @@ import org.springframework.data.domain.Pageable;
 public class BookService {
 
     private final BookRepository bookRepository;
-    private final GoogleBooksService googleBooksService;
 
-    public BookService(BookRepository bookRepository, GoogleBooksService googleBooksService) {
+    public BookService(BookRepository bookRepository) {
         this.bookRepository = bookRepository;
-        this.googleBooksService = googleBooksService;
     }
 
     public Map<String, Object> getAllBooks(String search, String genre, int page, int size) {
@@ -69,31 +66,5 @@ public class BookService {
         bookRepository.deleteById(id);
     }
 
-    public Map<String, Integer> refreshAllCovers() {
-        List<Book> books = bookRepository.findBooksWithoutCover();
-        int updated = 0;
-        int notFound = 0;
 
-        for (Book book : books) {
-            String coverUrl = googleBooksService.fetchCoverUrl(book.getTitle(), book.getAuthor());
-            if (coverUrl != null) {
-                book.setCoverUrl(coverUrl);
-                bookRepository.save(book);
-                updated++;
-            } else {
-                notFound++;
-            }
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-
-        Map<String, Integer> result = new HashMap<>();
-        result.put("updated", updated);
-        result.put("notFound", notFound);
-        return result;
-    }
 }
