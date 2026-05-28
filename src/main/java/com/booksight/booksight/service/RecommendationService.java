@@ -54,7 +54,6 @@ public class RecommendationService {
         Map<String, Double> userProfile = buildUserProfile(user);
         if (userProfile.isEmpty()) {
             log.warn("Kullanıcının henüz yorumu yok, popüler kitaplar dönülüyor");
-            // avgRating'e göre sırala, limit kadar al
             return bookRepository.findAll().stream()
                     .sorted(Comparator.comparingDouble(
                             b -> b.getAvgRating() != null ? -b.getAvgRating() : 0))
@@ -71,13 +70,29 @@ public class RecommendationService {
 
         // Tüm kitaplar için benzerlik hesapla
         List<Book> allBooks = bookRepository.findAll();
-        List<BookScore> scored = allBooks.stream()
+        List<Book> unread = allBooks.stream()
                 .filter(b -> !readBookIds.contains(b.getBookId()))
+                .toList();
+
+        List<BookScore> scored = unread.stream()
                 .map(b -> new BookScore(b, cosineSimilarity(userProfile, getBookProfile(b))))
                 .filter(bs -> bs.score() > 0)
                 .sorted(Comparator.comparingDouble(BookScore::score).reversed())
                 .limit(limit)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        // NLP eşleşmesi yetersizse popüler kitaplarla tamamla
+        if (scored.size() < limit) {
+            Set<Long> scoredIds = scored.stream()
+                    .map(bs -> bs.book().getBookId())
+                    .collect(Collectors.toSet());
+            unread.stream()
+                    .filter(b -> !scoredIds.contains(b.getBookId()))
+                    .sorted(Comparator.comparingDouble(
+                            b -> b.getAvgRating() != null ? -b.getAvgRating() : 0))
+                    .limit(limit - scored.size())
+                    .forEach(b -> scored.add(new BookScore(b, 0.0)));
+        }
 
         log.info("Öneri tamamlandı: {} kitap bulundu", scored.size());
         return scored.stream().map(BookScore::book).toList();
@@ -105,23 +120,17 @@ public class RecommendationService {
         return profile;
     }
 
-    // ── Kitap profili ─────────────────────────────────────────────────────────
+    // ── Kitap profili — book.labels kolonundan okur ───────────────────────────
 
     private Map<String, Double> getBookProfile(Book book) {
-        List<Review> reviews = reviewRepository.findByBookBookIdOrderByCreatedAtDesc(book.getBookId());
-        Map<String, List<Double>> labelScores = new HashMap<>();
-
-        for (Review review : reviews) {
-            NlpResult nlp = nlpResultRepository.findByReview(review).orElse(null);
-            if (nlp == null || nlp.getLabelScores() == null) continue;
-            nlp.getLabelScores().forEach((label, score) ->
-                    labelScores.computeIfAbsent(label, k -> new ArrayList<>()).add(score));
+        List<String> labels = book.getLabels();
+        if (labels == null || labels.isEmpty()) {
+            return Collections.emptyMap();
         }
-
         Map<String, Double> profile = new HashMap<>();
-        labelScores.forEach((label, scores) ->
-                profile.put(label, scores.stream().mapToDouble(Double::doubleValue).average().orElse(0)));
-
+        for (String label : labels) {
+            profile.put(label, 1.0);
+        }
         return profile;
     }
 

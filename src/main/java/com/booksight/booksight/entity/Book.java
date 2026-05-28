@@ -2,6 +2,10 @@ package com.booksight.booksight.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.List;
 
 @Entity
 @Table(name = "books")
@@ -39,4 +43,8 @@ public class Book {
 
     @Column(columnDefinition = "TEXT")
     private String coverUrl;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> labels;
 }

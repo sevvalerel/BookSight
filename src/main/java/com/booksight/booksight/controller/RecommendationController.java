@@ -2,7 +2,6 @@ package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
 import com.booksight.booksight.dto.RecommendationDTO;
-import com.booksight.booksight.entity.NlpResult;
 import com.booksight.booksight.repository.NlpResultRepository;
 import com.booksight.booksight.repository.ReviewRepository;
 import com.booksight.booksight.repository.UserRepository;
@@ -11,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +25,7 @@ public class RecommendationController {
     private final ReviewRepository reviewRepository;
 
     @GetMapping
-    public ResponseEntity<List<RecommendationDTO>> getRecommendations(
+    public ResponseEntity<Map<String, Object>> getRecommendations(
             @RequestHeader("Authorization") String authHeader) {
 
         String token = authHeader.replace("Bearer ", "");
@@ -41,29 +39,8 @@ public class RecommendationController {
         List<RecommendationDTO> result = recommendations.stream().map(rec -> {
             var book = rec.getBook();
 
-            // Kitabın NLP etiketlerini bul
-            List<String> detectedLabels = new ArrayList<>();
-            Double confidenceScore = 0.0;
-
-            var reviews = reviewRepository.findByBookBookIdOrderByCreatedAtDesc(book.getBookId());
-            for (var review : reviews) {
-                var nlpOpt = nlpResultRepository.findByReview(review);
-                if (nlpOpt.isPresent()) {
-                    NlpResult nlp = nlpOpt.get();
-                    if (nlp.getDetectedLabels() != null) {
-                        for (String label : nlp.getDetectedLabels()) {
-                            if (!detectedLabels.contains(label)) {
-                                detectedLabels.add(label);
-                            }
-                        }
-                    }
-                    if (nlp.getLabelScores() != null && !nlp.getLabelScores().isEmpty()) {
-                        double avg = nlp.getLabelScores().values().stream()
-                                .mapToDouble(Double::doubleValue).average().orElse(0);
-                        confidenceScore = Math.max(confidenceScore, avg);
-                    }
-                }
-            }
+            // book.labels kolonundan oku
+            List<String> detectedLabels = book.getLabels() != null ? book.getLabels() : List.of();
 
             // Neden önerildi metni
             String reason = detectedLabels.isEmpty()
@@ -77,12 +54,16 @@ public class RecommendationController {
                     .coverUrl(book.getCoverUrl())
                     .genre(book.getGenre())
                     .detectedLabels(detectedLabels)
-                    .confidenceScore(rec.getConfidenceScore() != null ? rec.getConfidenceScore() : confidenceScore)
+                    .confidenceScore(rec.getConfidenceScore() != null ? rec.getConfidenceScore() : 0.0)
                     .reason(reason)
                     .build();
         }).toList();
 
-        return ResponseEntity.ok(result);
+        long analyzedReviews = reviewRepository.findByUserUserId(userId).stream()
+                .filter(r -> nlpResultRepository.findByReview(r).isPresent())
+                .count();
+
+        return ResponseEntity.ok(Map.of("recommendations", result, "analyzedReviews", analyzedReviews));
     }
 
     private String turkishLabel(String label) {
