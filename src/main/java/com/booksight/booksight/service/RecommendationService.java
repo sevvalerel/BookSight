@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import com.booksight.booksight.repository.RecommendationFeedbackRepository;
 
 @Slf4j
 @Service
@@ -28,6 +29,7 @@ public class RecommendationService {
     private final NlpResultRepository nlpResultRepository;
     private final UserRepository userRepository;
     private final ReadingStatusRepository readingStatusRepository;
+    private final RecommendationFeedbackRepository feedbackRepository;
 
     // ── Controller'dan çağrılan metot ─────────────────────────────────────────
 
@@ -78,7 +80,9 @@ public class RecommendationService {
         // Kullanıcının kütüphanesindeki (okudum/okuyorum/okuyacağım) kitapları da hariç tut
         readingStatusRepository.findByUserUserId(user.getUserId())
                 .forEach(rs -> readBookIds.add(rs.getBook().getBookId()));
-
+        // Beğenilmeyen kitapları da hariç tut
+        feedbackRepository.findByUserUserIdAndLikedFalse(user.getUserId())
+                .forEach(fb -> readBookIds.add(fb.getBook().getBookId()));
         // Tüm kitaplar için benzerlik hesapla
         List<Book> allBooks = bookRepository.findAll();
         List<Book> unread = allBooks.stream()

@@ -2,9 +2,8 @@ package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
 import com.booksight.booksight.dto.RecommendationDTO;
-import com.booksight.booksight.repository.NlpResultRepository;
-import com.booksight.booksight.repository.ReviewRepository;
-import com.booksight.booksight.repository.UserRepository;
+import com.booksight.booksight.entity.RecommendationFeedback;
+import com.booksight.booksight.repository.*;
 import com.booksight.booksight.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +22,8 @@ public class RecommendationController {
     private final UserRepository userRepository;
     private final NlpResultRepository nlpResultRepository;
     private final ReviewRepository reviewRepository;
+    private final BookRepository bookRepository;
+    private final RecommendationFeedbackRepository feedbackRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getRecommendations(
@@ -38,11 +39,8 @@ public class RecommendationController {
 
         List<RecommendationDTO> result = recommendations.stream().map(rec -> {
             var book = rec.getBook();
-
-            // book.labels kolonundan oku
             List<String> detectedLabels = book.getLabels() != null ? book.getLabels() : List.of();
 
-            // Neden önerildi metni
             String reason = detectedLabels.isEmpty()
                     ? "Popüler kitaplar arasında"
                     : turkishLabel(detectedLabels.get(0)) + " içeren kitapları seviyorsun";
@@ -64,6 +62,41 @@ public class RecommendationController {
                 .count();
 
         return ResponseEntity.ok(Map.of("recommendations", result, "analyzedReviews", analyzedReviews));
+    }
+
+    @PostMapping("/{bookId}/feedback")
+    public ResponseEntity<Map<String, String>> submitFeedback(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long bookId,
+            @RequestBody Map<String, Boolean> body) {
+
+        String token = authHeader.replace("Bearer ", "");
+        String username = jwtUtil.extractUsername(token);
+        var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+        var book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
+
+        boolean liked = body.getOrDefault("liked", true);
+
+        // Daha önce feedback varsa güncelle, yoksa yeni oluştur
+        var existing = feedbackRepository.findByUserUserIdAndBookBookId(user.getUserId(), bookId);
+        if (existing.isPresent()) {
+            existing.get().setLiked(liked);
+            feedbackRepository.save(existing.get());
+        } else {
+            feedbackRepository.save(RecommendationFeedback.builder()
+                    .user(user)
+                    .book(book)
+                    .liked(liked)
+                    .build());
+        }
+
+        String message = liked
+                ? "Teşekkürler! Önerilerimizi geliştirmemize yardımcı oluyorsun."
+                : "Teşekkürler! Bu tür önerileri azaltacağız.";
+
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     private String turkishLabel(String label) {
