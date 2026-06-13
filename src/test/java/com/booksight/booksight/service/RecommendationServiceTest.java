@@ -22,6 +22,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import com.booksight.booksight.repository.ReadingStatusRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RecommendationService Tests")
@@ -32,6 +33,7 @@ class RecommendationServiceTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private NlpResultRepository nlpResultRepository;
     @Mock private UserRepository userRepository;
+    @Mock private ReadingStatusRepository readingStatusRepository;
 
     @InjectMocks
     private RecommendationService recommendationService;
@@ -72,6 +74,9 @@ class RecommendationServiceTest {
         nlpResult = new NlpResult();
         nlpResult.setReview(review);
         nlpResult.setDetectedLabels(List.of("adventure", "mystery"));
+
+        lenient().when(readingStatusRepository.findByUserUserId(anyLong()))
+                .thenReturn(Collections.emptyList());
     }
 
     @Nested
