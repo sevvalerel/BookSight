@@ -7,6 +7,7 @@ import com.booksight.booksight.entity.Review;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.BookRepository;
 import com.booksight.booksight.repository.NlpResultRepository;
+import com.booksight.booksight.repository.ReadingStatusRepository;
 import com.booksight.booksight.repository.ReviewRepository;
 import com.booksight.booksight.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class RecommendationService {
     private final ReviewRepository reviewRepository;
     private final NlpResultRepository nlpResultRepository;
     private final UserRepository userRepository;
+    private final ReadingStatusRepository readingStatusRepository;
 
     // ── Controller'dan çağrılan metot ─────────────────────────────────────────
 
@@ -54,19 +56,28 @@ public class RecommendationService {
         Map<String, Double> userProfile = buildUserProfile(user);
         if (userProfile.isEmpty()) {
             log.warn("Kullanıcının henüz yorumu yok, popüler kitaplar dönülüyor");
+            Set<Long> excludeIds = readingStatusRepository.findByUserUserId(user.getUserId())
+                    .stream()
+                    .map(rs -> rs.getBook().getBookId())
+                    .collect(Collectors.toSet());
             return bookRepository.findAll().stream()
+                    .filter(b -> !excludeIds.contains(b.getBookId()))
                     .sorted(Comparator.comparingDouble(
                             b -> b.getAvgRating() != null ? -b.getAvgRating() : 0))
                     .limit(limit)
                     .toList();
         }
 
-        // Kullanıcının okuduğu kitap ID'leri
+        // Kullanıcının okuduğu/yorum yaptığı kitap ID'leri (öneri havuzundan hariç tutulacak)
         Set<Long> readBookIds = reviewRepository
                 .findByUserUserId(user.getUserId())
                 .stream()
                 .map(r -> r.getBook().getBookId())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(HashSet::new));
+
+        // Kullanıcının kütüphanesindeki (okudum/okuyorum/okuyacağım) kitapları da hariç tut
+        readingStatusRepository.findByUserUserId(user.getUserId())
+                .forEach(rs -> readBookIds.add(rs.getBook().getBookId()));
 
         // Tüm kitaplar için benzerlik hesapla
         List<Book> allBooks = bookRepository.findAll();
