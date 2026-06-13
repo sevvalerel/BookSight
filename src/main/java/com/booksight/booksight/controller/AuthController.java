@@ -1,12 +1,19 @@
 package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
+import com.booksight.booksight.entity.PasswordResetToken;
 import com.booksight.booksight.entity.User;
+import com.booksight.booksight.repository.PasswordResetTokenRepository;
+import com.booksight.booksight.repository.UserRepository;
+import com.booksight.booksight.service.EmailService;
 import com.booksight.booksight.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -14,10 +21,21 @@ public class AuthController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
+    private final UserRepository userRepository;
+    private final PasswordResetTokenRepository resetTokenRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthController(UserService userService, JwtUtil jwtUtil) {
+    public AuthController(UserService userService, JwtUtil jwtUtil,
+                          EmailService emailService, UserRepository userRepository,
+                          PasswordResetTokenRepository resetTokenRepository,
+                          BCryptPasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
+        this.userRepository = userRepository;
+        this.resetTokenRepository = resetTokenRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/register")
@@ -28,6 +46,13 @@ public class AuthController {
 
         User user = userService.register(username, email, password);
         String token = jwtUtil.generateToken(user.getUsername());
+
+        // Hoş geldin maili gönder
+        try {
+            emailService.sendWelcomeEmail(email, username);
+        } catch (Exception e) {
+            // Mail gönderilemezse kayıt yine başarılı olsun
+        }
 
         return ResponseEntity.ok(Map.of(
                 "message", "Kayıt başarılı!",
@@ -47,6 +72,59 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
                 "token", token,
                 "username", user.getUsername()
+        ));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı."));
+
+        // 6 haneli kod oluştur
+        String code = String.format("%06d", new Random().nextInt(999999));
+
+        // Token kaydet (10 dk geçerli)
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .user(user)
+                .token(code)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .used(false)
+                .build();
+        resetTokenRepository.save(resetToken);
+
+        // Kodu maile gönder
+        emailService.sendPasswordResetCode(email, code);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Şifre sıfırlama kodu e-posta adresinize gönderildi."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String code = request.get("code");
+        String newPassword = request.get("newPassword");
+
+        PasswordResetToken resetToken = resetTokenRepository.findByTokenAndUsedFalse(code)
+                .orElseThrow(() -> new RuntimeException("Geçersiz veya kullanılmış kod."));
+
+        if (resetToken.isExpired()) {
+            throw new RuntimeException("Kodun süresi dolmuş. Lütfen yeni kod talep edin.");
+        }
+
+        // Şifreyi güncelle
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Tokeni kullanılmış olarak işaretle
+        resetToken.setUsed(true);
+        resetTokenRepository.save(resetToken);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Şifreniz başarıyla güncellendi."
         ));
     }
 }
