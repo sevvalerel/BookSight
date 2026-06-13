@@ -2,6 +2,7 @@ package com.booksight.booksight.service;
 
 import com.booksight.booksight.dto.StatsDTO;
 import com.booksight.booksight.entity.Review;
+import com.booksight.booksight.repository.NlpResultRepository;
 import com.booksight.booksight.repository.ReviewRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,9 +14,11 @@ import java.util.stream.Collectors;
 public class StatsService {
 
     private final ReviewRepository reviewRepository;
+    private final NlpResultRepository nlpResultRepository;
 
-    public StatsService(ReviewRepository reviewRepository) {
+    public StatsService(ReviewRepository reviewRepository, NlpResultRepository nlpResultRepository) {
         this.reviewRepository = reviewRepository;
+        this.nlpResultRepository = nlpResultRepository;
     }
 
     public StatsDTO getStatsForUser(Long userId) {
@@ -59,6 +62,24 @@ public class StatsService {
                     .build());
         }
 
+        // ── Sevdiğin Temalar: kullanıcının review'larındaki NLP etiketlerinin frekansı ──
+        Map<String, Long> themeCounts = new HashMap<>();
+        for (Review r : reviews) {
+            nlpResultRepository.findByReview(r).ifPresent(nlp -> {
+                if (nlp.getDetectedLabels() != null) {
+                    for (String label : nlp.getDetectedLabels()) {
+                        themeCounts.merge(label, 1L, Long::sum);
+                    }
+                }
+            });
+        }
+
+        List<String> topThemes = themeCounts.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(4)
+                .map(e -> turkishLabel(e.getKey()))
+                .collect(Collectors.toList());
+
         return StatsDTO.builder()
                 .totalReviews(totalReviews)
                 .reviewsThisMonth(reviewsThisMonth)
@@ -66,6 +87,26 @@ public class StatsService {
                 .averageRating(averageRating)
                 .genreDistribution(genreDistribution)
                 .monthlyTrend(monthlyTrend)
+                .topThemes(topThemes)
                 .build();
+    }
+
+    private String turkishLabel(String label) {
+        return switch (label) {
+            case "felsefi" -> "Felsefi";
+            case "psikolojik_derinlik" -> "Psikolojik Derinlik";
+            case "duygusal_yogunluk" -> "Duygusal Yoğunluk";
+            case "toplumsal_elestiri" -> "Toplumsal Eleştiri";
+            case "tarihsel" -> "Tarihsel";
+            case "karamsar" -> "Karamsar";
+            case "akici_ve_surukleyici" -> "Akıcı ve Sürükleyici";
+            case "ask" -> "Aşk";
+            case "macera" -> "Macera";
+            case "bilimkurgu_distopya" -> "Bilim Kurgu/Distopya";
+            case "gizem_polisiye" -> "Gizem/Polisiye";
+            case "ogretici_farkindalik" -> "Öğretici/Farkındalık";
+            case "mizah" -> "Mizah";
+            default -> label;
+        };
     }
 }

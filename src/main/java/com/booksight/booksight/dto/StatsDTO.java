@@ -16,6 +16,7 @@ public class StatsDTO {
     private double averageRating;
     private List<GenreCount> genreDistribution;
     private List<MonthlyCount> monthlyTrend;
+    private List<String> topThemes;
 
     @Getter
     @Setter
