@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import com.booksight.booksight.repository.RecommendationRepository;
 
 @RestController
 @RequestMapping("/api/recommendations")
@@ -24,6 +25,7 @@ public class RecommendationController {
     private final ReviewRepository reviewRepository;
     private final BookRepository bookRepository;
     private final RecommendationFeedbackRepository feedbackRepository;
+    private final RecommendationRepository recommendationRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getRecommendations(
@@ -60,8 +62,39 @@ public class RecommendationController {
         long analyzedReviews = reviewRepository.findByUserUserId(userId).stream()
                 .filter(r -> nlpResultRepository.findByReview(r).isPresent())
                 .count();
+        for (int i = 0; i < recommendations.size() && i < result.size(); i++) {
+            recommendations.get(i).setReason(result.get(i).getReason());
+        }
+        recommendationRepository.saveAll(recommendations);
 
         return ResponseEntity.ok(Map.of("recommendations", result, "analyzedReviews", analyzedReviews));
+    }
+    @GetMapping("/history")
+    public ResponseEntity<List<RecommendationDTO>> getHistory(
+            @RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.replace("Bearer ", "");
+        String username = jwtUtil.extractUsername(token);
+        Long userId = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"))
+                .getUserId();
+
+        List<RecommendationDTO> history = recommendationRepository
+                .findByUserUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(rec -> RecommendationDTO.builder()
+                        .bookId(rec.getBook().getBookId())
+                        .title(rec.getBook().getTitle())
+                        .author(rec.getBook().getAuthor())
+                        .coverUrl(rec.getBook().getCoverUrl())
+                        .genre(rec.getBook().getGenre())
+                        .reason(rec.getReason() != null ? rec.getReason() : "")
+                        .confidenceScore(rec.getConfidenceScore() != null ? rec.getConfidenceScore() : 0.0)
+                        .detectedLabels(rec.getBook().getLabels() != null ? rec.getBook().getLabels() : List.of())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(history);
     }
 
     @PostMapping("/{bookId}/feedback")

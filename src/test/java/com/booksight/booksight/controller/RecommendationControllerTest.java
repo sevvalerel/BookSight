@@ -32,6 +32,8 @@ class RecommendationControllerTest {
     @Mock private UserRepository userRepository;
     @Mock private NlpResultRepository nlpResultRepository;
     @Mock private ReviewRepository reviewRepository;
+    @Mock private com.booksight.booksight.repository.BookRepository bookRepository;
+    @Mock private com.booksight.booksight.repository.RecommendationRepository recommendationRepository;
 
     @InjectMocks
     private RecommendationController recommendationController;
@@ -69,6 +71,7 @@ class RecommendationControllerTest {
 
         when(jwtUtil.extractUsername("test-token")).thenReturn("testuser");
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        lenient().when(recommendationRepository.saveAll(any())).thenReturn(List.of());
     }
 
     @Nested
