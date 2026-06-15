@@ -61,7 +61,7 @@ public class BookServiceTest {
         Page<Book> page = new PageImpl<>(List.of(book1, book2));
         when(bookRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        Map<String, Object> result = bookService.getAllBooks(null, null, 0, 20);
+        Map<String, Object> result = bookService.getAllBooks(null, null, null, 0, 20);
 
         assertEquals(2, ((List<?>) result.get("content")).size());
         assertEquals(false, result.get("hasNext"));
@@ -75,7 +75,7 @@ public class BookServiceTest {
         Page<Book> page = new PageImpl<>(List.of(book));
         when(bookRepository.searchBooks(eq("Suç"), any(Pageable.class))).thenReturn(page);
 
-        Map<String, Object> result = bookService.getAllBooks("Suç", null, 0, 20);
+        Map<String, Object> result = bookService.getAllBooks("Suç", null, null, 0, 20);
 
         assertEquals(1, ((List<?>) result.get("content")).size());
         assertEquals("Suç ve Ceza", ((List<Book>) result.get("content")).get(0).getTitle());
@@ -91,7 +91,7 @@ public class BookServiceTest {
         when(bookRepository.findByGenreContainingIgnoreCase(eq("Klasik"), any(Pageable.class)))
                 .thenReturn(page);
 
-        Map<String, Object> result = bookService.getAllBooks(null, "Klasik", 0, 20);
+        Map<String, Object> result = bookService.getAllBooks(null, "Klasik", null, 0, 20);
 
         assertEquals(1, ((List<?>) result.get("content")).size());
         assertEquals("Klasik", ((List<Book>) result.get("content")).get(0).getGenre());
@@ -106,7 +106,7 @@ public class BookServiceTest {
         Page<Book> page = new PageImpl<>(List.of(book));
         when(bookRepository.searchBooks(eq("Suç"), any(Pageable.class))).thenReturn(page);
 
-        Map<String, Object> result = bookService.getAllBooks("Suç", "Klasik", 0, 20);
+        Map<String, Object> result = bookService.getAllBooks("Suç", "Klasik", null, 0, 20);
 
         assertEquals(1, ((List<?>) result.get("content")).size());
     }
