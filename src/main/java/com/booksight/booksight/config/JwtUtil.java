@@ -12,7 +12,7 @@ import java.util.Date;
 public class JwtUtil {
 
     @Value("${app.jwt.secret:booksight-secret-key-must-be-long-enough-123456}")
-    private String secret;
+    private String secret = "booksight-secret-key-must-be-long-enough-123456";
 
     private final long EXPIRATION = 86400000; // 24 saat
 
