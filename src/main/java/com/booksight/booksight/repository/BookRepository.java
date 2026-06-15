@@ -26,4 +26,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             nativeQuery = true)
     Page<Book> searchBooks(@Param("search") String search, Pageable pageable);
 
+    @Query(value = "SELECT * FROM books WHERE avg_rating >= :minRating ORDER BY avg_rating DESC",
+            countQuery = "SELECT count(*) FROM books WHERE avg_rating >= :minRating",
+            nativeQuery = true)
+    Page<Book> findByMinRating(@Param("minRating") double minRating, Pageable pageable);
 }

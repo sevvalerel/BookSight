@@ -43,7 +43,8 @@ public class RecommendationController {
             var book = rec.getBook();
             List<String> detectedLabels = book.getLabels() != null ? book.getLabels() : List.of();
 
-            String reason = detectedLabels.isEmpty()
+            boolean isPersonalized = Boolean.TRUE.equals(rec.getIsAiGenerated());
+            String reason = (!isPersonalized || detectedLabels.isEmpty())
                     ? "Popüler kitaplar arasında"
                     : turkishLabel(detectedLabels.get(0)) + " içeren kitapları seviyorsun";
 

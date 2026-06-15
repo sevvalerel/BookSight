@@ -22,9 +22,10 @@ public class BookController {
     public ResponseEntity<Map<String, Object>> getAllBooks(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String genre,
+            @RequestParam(required = false) Double minRating,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(bookService.getAllBooks(search, genre, page, size));
+        return ResponseEntity.ok(bookService.getAllBooks(search, genre, minRating, page, size));
     }
 
     @GetMapping("/{id}")

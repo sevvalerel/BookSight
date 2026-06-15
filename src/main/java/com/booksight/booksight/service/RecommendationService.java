@@ -36,14 +36,13 @@ public class RecommendationService {
     public List<Recommendation> getRecommendations(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
-
+        boolean isPersonalized = !buildUserProfile(user).isEmpty();
         List<Book> recommended = recommend(user, 10);
-
         return recommended.stream().map(book -> {
             Recommendation rec = new Recommendation();
             rec.setUser(user);
             rec.setBook(book);
-            rec.setIsAiGenerated(true);
+            rec.setIsAiGenerated(isPersonalized);
             rec.setCreatedAt(java.time.LocalDateTime.now());
             rec.setConfidenceScore(0.0);
             return rec;

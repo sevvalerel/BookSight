@@ -18,12 +18,14 @@ public class BookService {
         this.bookRepository = bookRepository;
     }
 
-    public Map<String, Object> getAllBooks(String search, String genre, int page, int size) {
+    public Map<String, Object> getAllBooks(String search, String genre, Double minRating, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Book> bookPage;
 
         if (search != null && !search.isBlank()) {
             bookPage = bookRepository.searchBooks(search, pageable);
+        } else if (minRating != null) {
+            bookPage = bookRepository.findByMinRating(minRating, pageable);
         } else if (genre != null && !genre.isBlank()) {
             bookPage = bookRepository.findByGenreContainingIgnoreCase(genre, pageable);
         } else {
