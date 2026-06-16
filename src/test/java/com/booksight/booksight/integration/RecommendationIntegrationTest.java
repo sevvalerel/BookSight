@@ -42,6 +42,7 @@ class RecommendationIntegrationTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String token;
+    private Long bookId;
 
     @BeforeEach
     void setup() throws Exception {
@@ -70,6 +71,22 @@ class RecommendationIntegrationTest {
         Map<?, ?> response = objectMapper.readValue(
                 result.getResponse().getContentAsString(), Map.class);
         token = (String) response.get("token");
+
+        Map<String, Object> bookBody = Map.of(
+                "title", "Test Kitabı",
+                "author", "Test Yazar",
+                "isbn", "1234567890123",
+                "description", "Test açıklama"
+        );
+        MvcResult bookResult = mockMvc.perform(post("/api/books")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bookBody)))
+                .andReturn();
+
+        Map<?, ?> bookResponse = objectMapper.readValue(
+                bookResult.getResponse().getContentAsString(), Map.class);
+        bookId = Long.valueOf(bookResponse.get("bookId").toString());
     }
 
     @Test
@@ -84,5 +101,15 @@ class RecommendationIntegrationTest {
     void oneriAl_tokensiz_reddedilmeli() throws Exception {
         mockMvc.perform(get("/api/recommendations"))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void feedbackGonder_basarili() throws Exception {
+        Map<String, Boolean> feedbackBody = Map.of("liked", true);
+        mockMvc.perform(post("/api/recommendations/" + bookId + "/feedback")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(feedbackBody)))
+                .andExpect(status().isOk());
     }
 }
