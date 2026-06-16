@@ -75,6 +75,34 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void sifreSifirlamaKoduGonder_kayitliEmail_basarili() throws Exception {
+        Map<String, String> registerBody = Map.of(
+                "username", "resetuser",
+                "email", "reset@test.com",
+                "password", "Test1234!"
+        );
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerBody)))
+                .andExpect(status().isOk());
+
+        Map<String, String> forgotBody = Map.of("email", "reset@test.com");
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(forgotBody)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void sifreSifirlamaKoduGonder_kayitsizEmail_hataVermeli() throws Exception {
+        Map<String, String> forgotBody = Map.of("email", "yok@test.com");
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(forgotBody)))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
     void yanlisSifre_girisReddedilmeli() throws Exception {
         Map<String, String> registerBody = Map.of(
                 "username", "wrongpassuser",

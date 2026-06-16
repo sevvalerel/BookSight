@@ -19,6 +19,8 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.Map;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -114,6 +116,47 @@ class ReviewIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reviewBody)))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void yorumSil_basarili() throws Exception {
+        Map<String, Object> reviewBody = Map.of(
+                "bookId", bookId,
+                "reviewText", "Silinecek yorum metni burada yer almaktadır, yeterince uzun olması gerekiyor.",
+                "rating", 3
+        );
+        MvcResult createResult = mockMvc.perform(post("/api/reviews")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewBody)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Map<?, ?> created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(), Map.class);
+        Long reviewId = Long.valueOf(created.get("reviewId").toString());
+
+        mockMvc.perform(delete("/api/reviews/" + reviewId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void kitabaGoreYorumlariListele_basarili() throws Exception {
+        Map<String, Object> reviewBody = Map.of(
+                "bookId", bookId,
+                "reviewText", "Listeleme testi için yazılan yorum metni, yeterince uzun tutuldu.",
+                "rating", 4
+        );
+        mockMvc.perform(post("/api/reviews")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewBody)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/reviews/book/" + bookId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test

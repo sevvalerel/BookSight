@@ -104,6 +104,14 @@ class RecommendationIntegrationTest {
     }
 
     @Test
+    void oneriGecmisiniAl_basarili() throws Exception {
+        mockMvc.perform(get("/api/recommendations/history")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
     void feedbackGonder_basarili() throws Exception {
         Map<String, Boolean> feedbackBody = Map.of("liked", true);
         mockMvc.perform(post("/api/recommendations/" + bookId + "/feedback")
