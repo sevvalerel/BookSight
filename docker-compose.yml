@@ -1,0 +1,72 @@
+version: "3.9"
+
+# BookSight - Yerel Geliştirme Ortamı
+#
+# Bu dosya, sistemin 3 ana bileşenini (PostgreSQL, Spring Boot Backend,
+# Python NLP Servisi) tek komutla ayağa kaldırır.
+#
+# ÖNEMLİ: NLP servisi ayrı bir repoda (booksight-nlp-service) olduğu için,
+# bu dosyanın çalışması için iki reponun KARDEŞ (sibling) klasörler olarak
+# klonlanmış olması gerekir:
+#
+#   ~/projeler/BookSight/                  (bu repo, docker-compose.yml burada)
+#   ~/projeler/booksight-nlp-service/      (NLP servisi reposu)
+#
+# Kullanım:
+#   docker compose up --build
+
+services:
+
+  # ── PostgreSQL Veritabanı ───────────────────────────────────────────────
+  db:
+    image: postgres:16
+    container_name: booksight-db-compose
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: booksight
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - booksight_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Python NLP Servisi (FastAPI + Gemini/Claude) ────────────────────────
+  nlp-service:
+    build:
+      context: ../NLP-Service
+    container_name: booksight-nlp-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+
+  # ── Spring Boot Backend ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+    container_name: booksight-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      nlp-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/booksight
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      NLP_SERVICE_URL: http://nlp-service:8000
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-booksight-secret-key-must-be-long-enough-123456}
+
+volumes:
+  booksight_pgdata:
