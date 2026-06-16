@@ -1,6 +1,7 @@
 package com.booksight.booksight.service;
 
 import com.booksight.booksight.config.JwtUtil;
+import com.booksight.booksight.dto.UpdateProfileRequest;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -158,5 +159,101 @@ public class UserServiceTest {
         assertThrows(RuntimeException.class, () ->
                 userService.login("test@test.com", "yanlis", jwtUtil)
         );
+    }
+
+    @Test
+    void getUserById_bulunan_donmeli() {
+        User user = User.builder().userId(1L).username("testuser").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        User result = userService.getUserById(1L);
+
+        assertEquals("testuser", result.getUsername());
+    }
+
+    @Test
+    void getUserById_bulunamayan_hataFirlatmali() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> userService.getUserById(99L));
+    }
+
+    @Test
+    void updateProfile_kullaniciAdiGuncelle_basarili() {
+        User user = User.builder().userId(1L).username("eskiad").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsernameAndUserIdNot("yeniad", 1L)).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setUsername("yeniad");
+
+        User result = userService.updateProfile(1L, request);
+
+        assertEquals("yeniad", result.getUsername());
+    }
+
+    @Test
+    void updateProfile_kullaniciAdiAlinmis_hataFirlatmali() {
+        User user = User.builder().userId(1L).username("eskiad").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsernameAndUserIdNot("alinmis", 1L)).thenReturn(true);
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setUsername("alinmis");
+
+        assertThrows(RuntimeException.class, () -> userService.updateProfile(1L, request));
+    }
+
+    @Test
+    void updateProfile_bosKullaniciAdi_hataFirlatmali() {
+        User user = User.builder().userId(1L).username("eskiad").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setUsername("   ");
+
+        assertThrows(RuntimeException.class, () -> userService.updateProfile(1L, request));
+    }
+
+    @Test
+    void updateProfile_sifreGuncelle_basarili() {
+        User user = User.builder().userId(1L).passwordHash("hashedEski").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("EskiSifre1!", "hashedEski")).thenReturn(true);
+        when(passwordEncoder.encode("YeniSifre1!")).thenReturn("hashedYeni");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setCurrentPassword("EskiSifre1!");
+        request.setNewPassword("YeniSifre1!");
+
+        User result = userService.updateProfile(1L, request);
+
+        assertEquals("hashedYeni", result.getPasswordHash());
+    }
+
+    @Test
+    void updateProfile_yanlisMevcutSifre_hataFirlatmali() {
+        User user = User.builder().userId(1L).passwordHash("hashedEski").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("yanlis", "hashedEski")).thenReturn(false);
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setCurrentPassword("yanlis");
+        request.setNewPassword("YeniSifre1!");
+
+        assertThrows(RuntimeException.class, () -> userService.updateProfile(1L, request));
+    }
+
+    @Test
+    void updateProfile_mevcutSifreSizYeniSifre_hataFirlatmali() {
+        User user = User.builder().userId(1L).passwordHash("hashedEski").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setNewPassword("YeniSifre1!");
+
+        assertThrows(RuntimeException.class, () -> userService.updateProfile(1L, request));
     }
 }

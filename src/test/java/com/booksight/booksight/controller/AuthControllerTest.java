@@ -1,7 +1,11 @@
 package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
+import com.booksight.booksight.entity.PasswordResetToken;
 import com.booksight.booksight.entity.User;
+import com.booksight.booksight.repository.PasswordResetTokenRepository;
+import com.booksight.booksight.repository.UserRepository;
+import com.booksight.booksight.service.EmailService;
 import com.booksight.booksight.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,8 +13,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,6 +30,18 @@ class AuthControllerTest {
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PasswordResetTokenRepository resetTokenRepository;
+
+    @Mock
+    private BCryptPasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AuthController authController;
@@ -134,5 +153,54 @@ class AuthControllerTest {
         );
 
         assertThrows(RuntimeException.class, () -> authController.login(body));
+    }
+
+    @Test
+    void forgotPassword_kayitliEmail_basarili() {
+        User user = User.builder().userId(1L).email("test@test.com").build();
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
+        when(resetTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ResponseEntity<?> response = authController.forgotPassword(Map.of("email", "test@test.com"));
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(emailService).sendPasswordResetCode(eq("test@test.com"), anyString());
+    }
+
+    @Test
+    void forgotPassword_kayitsizEmail_hataFirlatmali() {
+        when(userRepository.findByEmail("yok@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () ->
+                authController.forgotPassword(Map.of("email", "yok@test.com")));
+    }
+
+    @Test
+    void resetPassword_gecerliKod_basarili() {
+        User user = User.builder().userId(1L).passwordHash("eski").build();
+        PasswordResetToken token = PasswordResetToken.builder()
+                .token("123456")
+                .user(user)
+                .used(false)
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        when(resetTokenRepository.findByTokenAndUsedFalse("123456")).thenReturn(Optional.of(token));
+        when(passwordEncoder.encode("Yeni1234!")).thenReturn("hashedYeni");
+        when(userRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(resetTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        ResponseEntity<?> response = authController.resetPassword(
+                Map.of("code", "123456", "newPassword", "Yeni1234!"));
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(token.isUsed());
+    }
+
+    @Test
+    void resetPassword_gecersizKod_hataFirlatmali() {
+        when(resetTokenRepository.findByTokenAndUsedFalse("000000")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () ->
+                authController.resetPassword(Map.of("code", "000000", "newPassword", "Yeni1234!")));
     }
 }
