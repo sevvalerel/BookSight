@@ -28,12 +28,12 @@ public class NlpResult {
 
     // ["felsefi", "ask", "tarihsel"]
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "detected_labels", columnDefinition = "jsonb")
+    @Column(name = "detected_labels")
     private List<String> detectedLabels;
 
     // {"felsefi": 0.82, "ask": 0.31, ...}
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "label_scores", columnDefinition = "jsonb")
+    @Column(name = "label_scores")
     private Map<String, Double> labelScores;
 
     @Column(name = "processed_at")

@@ -45,6 +45,6 @@ public class Book {
     private String coverUrl;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
+    @Column
     private List<String> labels;
 }
