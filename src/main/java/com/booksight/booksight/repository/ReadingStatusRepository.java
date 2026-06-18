@@ -7,12 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReadingStatusRepository extends JpaRepository<ReadingStatus, Long> {
-
     List<ReadingStatus> findByUserUserId(Long userId);
-
     Optional<ReadingStatus> findByUserUserIdAndBookBookId(Long userId, Long bookId);
-
     void deleteByUserUserIdAndBookBookId(Long userId, Long bookId);
-
     long countByUserUserIdAndStatus(Long userId, String status);
 }

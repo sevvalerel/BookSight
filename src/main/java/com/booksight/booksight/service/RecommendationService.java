@@ -31,7 +31,6 @@ public class RecommendationService {
     private final ReadingStatusRepository readingStatusRepository;
     private final RecommendationFeedbackRepository feedbackRepository;
 
-    // ── Controller'dan çağrılan metot ─────────────────────────────────────────
 
     public List<Recommendation> getRecommendations(Long userId) {
         User user = userRepository.findById(userId)
