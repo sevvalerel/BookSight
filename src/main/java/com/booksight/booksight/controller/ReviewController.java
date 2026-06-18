@@ -70,7 +70,8 @@ public class ReviewController {
                         r.getCreatedAt().toString(),
                         r.getBook().getBookId(),
                         r.getBook().getTitle(),
-                        r.getBook().getCoverUrl()
+                        r.getBook().getCoverUrl(),
+                        r.getUser().getAvatarUrl()
                 ))
                 .toList();
         return ResponseEntity.ok(dtos);
@@ -90,7 +91,8 @@ public class ReviewController {
                         r.getCreatedAt().toString(),
                         r.getBook().getBookId(),
                         r.getBook().getTitle(),
-                        r.getBook().getCoverUrl()
+                        r.getBook().getCoverUrl(),
+                        r.getUser().getAvatarUrl()
                 ))
                 .toList();
         return ResponseEntity.ok(dtos);

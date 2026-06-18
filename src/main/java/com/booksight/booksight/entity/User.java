@@ -3,6 +3,7 @@ package com.booksight.booksight.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,4 +37,15 @@ public class User {
 
     @Column(length = 500)
     private String avatarUrl;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer streak = 0;
+
+    @Column
+    private LocalDate lastCheckinDate;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer totalPoints = 0;
 }

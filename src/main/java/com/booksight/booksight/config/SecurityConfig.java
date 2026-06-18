@@ -37,6 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/books/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reviews/book/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users/leaderboard").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/users/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

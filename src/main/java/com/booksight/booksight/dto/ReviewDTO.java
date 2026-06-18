@@ -9,9 +9,10 @@ public class ReviewDTO {
     private Long bookId;
     private String bookTitle;
     private String bookCoverUrl;
+    private String userAvatarUrl;
 
     public ReviewDTO(Long reviewId, String reviewText, Integer rating, String username, String createdAt,
-                     Long bookId, String bookTitle, String bookCoverUrl) {
+                     Long bookId, String bookTitle, String bookCoverUrl, String userAvatarUrl) {
         this.reviewId = reviewId;
         this.reviewText = reviewText;
         this.rating = rating;
@@ -20,6 +21,7 @@ public class ReviewDTO {
         this.bookId = bookId;
         this.bookTitle = bookTitle;
         this.bookCoverUrl = bookCoverUrl;
+        this.userAvatarUrl = userAvatarUrl;
     }
 
     public Long getReviewId() { return reviewId; }
@@ -30,4 +32,5 @@ public class ReviewDTO {
     public Long getBookId() { return bookId; }
     public String getBookTitle() { return bookTitle; }
     public String getBookCoverUrl() { return bookCoverUrl; }
+    public String getUserAvatarUrl() { return userAvatarUrl; }
 }

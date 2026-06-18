@@ -13,4 +13,6 @@ public interface ReadingStatusRepository extends JpaRepository<ReadingStatus, Lo
     Optional<ReadingStatus> findByUserUserIdAndBookBookId(Long userId, Long bookId);
 
     void deleteByUserUserIdAndBookBookId(Long userId, Long bookId);
+
+    long countByUserUserIdAndStatus(Long userId, String status);
 }

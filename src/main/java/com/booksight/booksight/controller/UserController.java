@@ -1,14 +1,15 @@
 package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
-import com.booksight.booksight.dto.UpdateProfileRequest;
-import com.booksight.booksight.dto.UpdateProfileResponse;
-import com.booksight.booksight.dto.UserDTO;
+import com.booksight.booksight.dto.*;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.UserRepository;
 import com.booksight.booksight.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -40,6 +41,38 @@ public class UserController {
         User user = userService.updateProfile(userId, request);
         String token = jwtUtil.generateToken(user.getUsername());
         return ResponseEntity.ok(new UpdateProfileResponse(toDto(user), token));
+    }
+
+    @PostMapping("/checkin")
+    public ResponseEntity<?> checkin(
+            @RequestHeader("Authorization") String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        try {
+            return ResponseEntity.ok(userService.checkin(userId));
+        } catch (RuntimeException e) {
+            if ("Bugün zaten okuma kaydettiniz".equals(e.getMessage())) {
+                return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+            }
+            throw e;
+        }
+    }
+
+    @GetMapping("/checkin/status")
+    public ResponseEntity<CheckinResponseDTO> getCheckinStatus(
+            @RequestHeader("Authorization") String authHeader) {
+        Long userId = getUserIdFromToken(authHeader);
+        return ResponseEntity.ok(userService.getCheckinStatus(userId));
+    }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<LeaderboardEntryDTO>> getLeaderboard() {
+        return ResponseEntity.ok(userService.getLeaderboard());
+    }
+
+    @GetMapping("/{username}")
+    public ResponseEntity<UserPublicProfileDTO> getUserPublicProfile(
+            @PathVariable String username) {
+        return ResponseEntity.ok(userService.getUserPublicProfile(username));
     }
 
     private UserDTO toDto(User user) {

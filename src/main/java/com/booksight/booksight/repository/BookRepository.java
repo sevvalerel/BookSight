@@ -21,8 +21,23 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query(value = "SELECT * FROM books WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))", nativeQuery = true)
     List<Book> searchBooks(@Param("search") String search);
 
-    @Query(value = "SELECT * FROM books WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))",
-            countQuery = "SELECT count(*) FROM books WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))",
+    @Query(value = """
+            SELECT * FROM books
+            WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))
+               OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))
+            ORDER BY
+              CASE
+                WHEN unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT(:search, '%'))) THEN 0
+                WHEN unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%'))) THEN 1
+                WHEN unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT(:search, '%'))) THEN 2
+                ELSE 3
+              END, title ASC
+            """,
+            countQuery = """
+            SELECT count(*) FROM books
+            WHERE unaccent(LOWER(title)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))
+               OR unaccent(LOWER(author)) LIKE unaccent(LOWER(CONCAT('%', :search, '%')))
+            """,
             nativeQuery = true)
     Page<Book> searchBooks(@Param("search") String search, Pageable pageable);
 
