@@ -1,12 +1,21 @@
 package com.booksight.booksight.config;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JwtUtilTest {
 
-    private final JwtUtil jwtUtil = new JwtUtil();
+    private JwtUtil jwtUtil;
+
+    @BeforeEach
+    void setUp() {
+        jwtUtil = new JwtUtil();
+        ReflectionTestUtils.setField(jwtUtil, "secret",
+                "test-secret-key-must-be-long-enough-for-testing-purposes");
+    }
 
     @Test
     void generateToken_gecerliUsername_tokenUretmeli() {

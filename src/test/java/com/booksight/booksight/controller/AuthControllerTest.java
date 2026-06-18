@@ -53,13 +53,13 @@ class AuthControllerTest {
                 .email("test@test.com")
                 .build();
 
-        when(userService.register("testuser", "test@test.com", "123456")).thenReturn(user);
+        when(userService.register("testuser", "test@test.com", "Test1234!")).thenReturn(user);
         when(jwtUtil.generateToken("testuser")).thenReturn("mock.token");
 
         Map<String, String> body = Map.of(
                 "username", "testuser",
                 "email", "test@test.com",
-                "password", "123456"
+                "password", "Test1234!"
         );
 
         ResponseEntity<?> response = authController.register(body);
@@ -79,7 +79,7 @@ class AuthControllerTest {
         Map<String, String> body = Map.of(
                 "username", "testuser",
                 "email", "kayitli@test.com",
-                "password", "123456"
+                "password", "Test1234!"
         );
 
         assertThrows(RuntimeException.class, () -> authController.register(body));
@@ -93,7 +93,7 @@ class AuthControllerTest {
         Map<String, String> body = Map.of(
                 "username", "mevcutuser",
                 "email", "yeni@test.com",
-                "password", "123456"
+                "password", "Test1234!"
         );
 
         assertThrows(RuntimeException.class, () -> authController.register(body));
