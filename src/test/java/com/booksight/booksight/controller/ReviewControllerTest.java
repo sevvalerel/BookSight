@@ -194,7 +194,7 @@ class ReviewControllerTest {
         Book book = makeBook(10L, "1984");
         Review r1 = makeReview(1L, user, book, "Benim yorumum burada yer alıyor.", 4);
 
-        when(reviewService.getReviewsByUser(1L)).thenReturn(List.of(r1));
+        when(reviewService.getReviewsByUserWithBook(1L)).thenReturn(List.of(r1));
 
         ResponseEntity<?> response = reviewController.getMyReviews("Bearer mock.token");
 
@@ -204,7 +204,7 @@ class ReviewControllerTest {
     @Test
     void getMyReviews_yorumYok_bosListeDonmeli() {
         mockToken("sevval", 1L);
-        when(reviewService.getReviewsByUser(1L)).thenReturn(List.of());
+        when(reviewService.getReviewsByUserWithBook(1L)).thenReturn(List.of());
 
         ResponseEntity<?> response = reviewController.getMyReviews("Bearer mock.token");
 

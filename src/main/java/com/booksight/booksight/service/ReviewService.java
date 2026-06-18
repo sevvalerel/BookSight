@@ -32,6 +32,10 @@ public class ReviewService {
         return reviewRepository.findByUserUserIdOrderByCreatedAtDesc(userId);
     }
 
+    public List<Review> getReviewsByUserWithBook(Long userId) {
+        return reviewRepository.findByUserIdWithBook(userId);
+    }
+
     public Review createReview(Long userId, Long bookId, String reviewText, Integer rating) {
         if (reviewRepository.existsByUserUserIdAndBookBookId(userId, bookId)) {
             throw new RuntimeException("Bu kitap için zaten yorum yazdınız!");

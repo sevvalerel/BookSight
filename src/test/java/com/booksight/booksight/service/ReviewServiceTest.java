@@ -310,6 +310,33 @@ public class ReviewServiceTest {
     }
 
     @Test
+    void getReviewsByUserWithBook_yorumlarVeKitapBilgisiDonmeli() {
+        User user = createUser(1L, "sevval");
+        Book book = createBook(10L, "1984");
+        Review r1 = createReview(1L, user, book, "Birinci yorum metni buraya yazıldı.", 5);
+
+        when(reviewRepository.findByUserIdWithBook(1L))
+                .thenReturn(List.of(r1));
+
+        List<Review> result = reviewService.getReviewsByUserWithBook(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("1984", result.get(0).getBook().getTitle());
+        verify(reviewRepository).findByUserIdWithBook(1L);
+    }
+
+    @Test
+    void getReviewsByUserWithBook_yorumYok_bosListeDonmeli() {
+        when(reviewRepository.findByUserIdWithBook(1L))
+                .thenReturn(List.of());
+
+        List<Review> result = reviewService.getReviewsByUserWithBook(1L);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     void createReview_kitapBulunamazsa_hataDonmeli() {
         String uzunYorum = "Bu kitap gerçekten çok etkileyici bir eserdi. Yazar karakterleri çok iyi işlemiş. " +
                 "Kesinlikle okunması gereken kitaplar listesine alındı, tavsiye ederim herkese.";
