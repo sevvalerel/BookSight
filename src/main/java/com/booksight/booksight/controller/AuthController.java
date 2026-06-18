@@ -11,9 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Random;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -44,7 +44,14 @@ public class AuthController {
         String email = request.get("email");
         String password = request.get("password");
 
-        User user = userService.register(username, email, password);
+        if (username == null || username.isBlank())
+            return ResponseEntity.badRequest().body(Map.of("message", "Kullanıcı adı boş olamaz."));
+        if (email == null || !email.contains("@") || !email.contains("."))
+            return ResponseEntity.badRequest().body(Map.of("message", "Geçerli bir e-posta adresi girin."));
+        if (password == null || password.length() < 8)
+            return ResponseEntity.badRequest().body(Map.of("message", "Şifre en az 8 karakter olmalıdır."));
+
+        User user = userService.register(username.trim(), email.trim(), password);
         String token = jwtUtil.generateToken(user.getUsername());
 
         // Hoş geldin maili gönder
@@ -82,8 +89,8 @@ public class AuthController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı."));
 
-        // 6 haneli kod oluştur
-        String code = String.format("%06d", new Random().nextInt(999999));
+        // 6 haneli kriptografik kod oluştur
+        String code = String.format("%06d", new SecureRandom().nextInt(1000000));
 
         // Token kaydet (10 dk geçerli)
         PasswordResetToken resetToken = PasswordResetToken.builder()

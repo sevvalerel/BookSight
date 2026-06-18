@@ -69,7 +69,7 @@ services:
       NLP_SERVICE_URL: http://nlp-service:8000
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
-      APP_JWT_SECRET: ${APP_JWT_SECRET:-booksight-secret-key-must-be-long-enough-123456}
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
 
 volumes:
   booksight_pgdata:
