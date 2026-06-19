@@ -1,23 +1,6 @@
 version: "3.9"
-
-# BookSight - Yerel Geliştirme Ortamı
-#
-# Bu dosya, sistemin 3 ana bileşenini (PostgreSQL, Spring Boot Backend,
-# Python NLP Servisi) tek komutla ayağa kaldırır.
-#
-# ÖNEMLİ: NLP servisi ayrı bir repoda (booksight-nlp-service) olduğu için,
-# bu dosyanın çalışması için iki reponun KARDEŞ (sibling) klasörler olarak
-# klonlanmış olması gerekir:
-#
-#   ~/projeler/BookSight/                  (bu repo, docker-compose.yml burada)
-#   ~/projeler/booksight-nlp-service/      (NLP servisi reposu)
-#
-# Kullanım:
-#   docker compose up --build
-
 services:
 
-  # ── PostgreSQL Veritabanı ───────────────────────────────────────────────
   db:
     image: postgres:16
     container_name: booksight-db-compose
@@ -36,7 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Python NLP Servisi (FastAPI + Gemini/Claude) ────────────────────────
   nlp-service:
     build:
       context: ../NLP-Service
@@ -45,8 +27,6 @@ services:
     ports:
       - "8000:8000"
 
-
-  # ── Spring Boot Backend ──────────────────────────────────────────────────
   backend:
     build:
       context: .
