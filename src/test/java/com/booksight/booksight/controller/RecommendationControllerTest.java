@@ -1,8 +1,10 @@
 package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
+import com.booksight.booksight.dto.RecommendationDTO;
 import com.booksight.booksight.entity.*;
 import com.booksight.booksight.repository.NlpResultRepository;
+import com.booksight.booksight.repository.RecommendationFeedbackRepository;
 import com.booksight.booksight.repository.ReviewRepository;
 import com.booksight.booksight.repository.UserRepository;
 import com.booksight.booksight.service.RecommendationService;
@@ -34,6 +36,7 @@ class RecommendationControllerTest {
     @Mock private ReviewRepository reviewRepository;
     @Mock private com.booksight.booksight.repository.BookRepository bookRepository;
     @Mock private com.booksight.booksight.repository.RecommendationRepository recommendationRepository;
+    @Mock private RecommendationFeedbackRepository feedbackRepository;
 
     @InjectMocks
     private RecommendationController recommendationController;
@@ -191,6 +194,109 @@ class RecommendationControllerTest {
 
             List<?> recommendations = (List<?>) response.getBody().get("recommendations");
             assertThat(recommendations).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/recommendations/history")
+    class GetHistory {
+
+        @Test
+        @DisplayName("200 ve geçmiş öneri listesi döner")
+        void shouldReturn200WithHistory() {
+            Recommendation rec = new Recommendation();
+            rec.setBook(book);
+            rec.setConfidenceScore(0.7);
+            rec.setReason("Test neden");
+
+            when(recommendationRepository.findByUserUserIdOrderByCreatedAtDesc(1L))
+                    .thenReturn(List.of(rec));
+
+            ResponseEntity<List<RecommendationDTO>> response =
+                    recommendationController.getHistory(AUTH_HEADER);
+
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).hasSize(1);
+            assertThat(response.getBody().get(0).getTitle()).isEqualTo("Test Kitap");
+        }
+
+        @Test
+        @DisplayName("Geçmiş yoksa boş liste döner")
+        void shouldReturnEmptyListWhenNoHistory() {
+            when(recommendationRepository.findByUserUserIdOrderByCreatedAtDesc(1L))
+                    .thenReturn(List.of());
+
+            ResponseEntity<List<RecommendationDTO>> response =
+                    recommendationController.getHistory(AUTH_HEADER);
+
+            assertThat(response.getBody()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("reason null ise boş string olarak döner")
+        void shouldHandleNullReason() {
+            Recommendation rec = new Recommendation();
+            rec.setBook(book);
+            rec.setConfidenceScore(0.5);
+            rec.setReason(null);
+
+            when(recommendationRepository.findByUserUserIdOrderByCreatedAtDesc(1L))
+                    .thenReturn(List.of(rec));
+
+            ResponseEntity<List<RecommendationDTO>> response =
+                    recommendationController.getHistory(AUTH_HEADER);
+
+            assertThat(response.getBody().get(0).getReason()).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/recommendations/{bookId}/feedback")
+    class SubmitFeedback {
+
+        @Test
+        @DisplayName("Yeni feedback kaydedilir, liked=true mesajı döner")
+        void shouldSaveNewFeedbackWhenLiked() {
+            when(bookRepository.findById(10L)).thenReturn(Optional.of(book));
+            when(feedbackRepository.findByUserUserIdAndBookBookId(1L, 10L))
+                    .thenReturn(Optional.empty());
+
+            ResponseEntity<Map<String, String>> response =
+                    recommendationController.submitFeedback(AUTH_HEADER, 10L, Map.of("liked", true));
+
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody().get("message")).contains("Teşekkürler");
+            verify(feedbackRepository).save(any(RecommendationFeedback.class));
+        }
+
+        @Test
+        @DisplayName("Mevcut feedback güncellenir")
+        void shouldUpdateExistingFeedback() {
+            RecommendationFeedback existing = RecommendationFeedback.builder()
+                    .user(user).book(book).liked(true).build();
+
+            when(bookRepository.findById(10L)).thenReturn(Optional.of(book));
+            when(feedbackRepository.findByUserUserIdAndBookBookId(1L, 10L))
+                    .thenReturn(Optional.of(existing));
+
+            ResponseEntity<Map<String, String>> response =
+                    recommendationController.submitFeedback(AUTH_HEADER, 10L, Map.of("liked", false));
+
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            verify(feedbackRepository).save(existing);
+        }
+
+        @Test
+        @DisplayName("liked=false ise azaltma mesajı döner")
+        void shouldReturnReduceMessageWhenDisliked() {
+            when(bookRepository.findById(10L)).thenReturn(Optional.of(book));
+            when(feedbackRepository.findByUserUserIdAndBookBookId(1L, 10L))
+                    .thenReturn(Optional.empty());
+
+            ResponseEntity<Map<String, String>> response =
+                    recommendationController.submitFeedback(AUTH_HEADER, 10L, Map.of("liked", false));
+
+            assertThat(response.getBody().get("message")).contains("azaltacağız");
         }
     }
 }

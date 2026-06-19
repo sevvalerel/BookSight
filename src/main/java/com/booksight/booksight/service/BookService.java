@@ -1,6 +1,7 @@
 package com.booksight.booksight.service;
 
 import com.booksight.booksight.entity.Book;
+import com.booksight.booksight.exception.ResourceNotFoundException;
 import com.booksight.booksight.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
@@ -43,7 +44,7 @@ public class BookService {
 
     public Book getBookById(Long id) {
         return bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kitap bulunamadı!"));
     }
 
     public Book createBook(Book book) {
@@ -63,7 +64,7 @@ public class BookService {
 
     public void deleteBook(Long id) {
         if (!bookRepository.existsById(id)) {
-            throw new RuntimeException("Kitap bulunamadı!");
+            throw new ResourceNotFoundException("Kitap bulunamadı!");
         }
         bookRepository.deleteById(id);
     }

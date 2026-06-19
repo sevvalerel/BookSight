@@ -32,7 +32,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Header'dan token al
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -40,26 +39,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2. "Bearer " kısmını kaldır
         String token = authHeader.substring(7);
 
-        // 3. Token geçerli mi?
         if (!jwtUtil.isTokenValid(token)) {
             filterChain.doFilter(request, response);
             return;
         }
-
-        // 4. Token'dan username al
         String username = jwtUtil.extractUsername(token);
 
-        // 5. Kullanıcı var mı kontrol et
         boolean userExists = userRepository.existsByUsername(username);
         if (!userExists) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 6. Spring Security'ye "bu kullanıcı giriş yaptı" de
         UserDetails userDetails = User.builder()
                 .username(username)
                 .password("")

@@ -5,6 +5,7 @@ import com.booksight.booksight.entity.NlpResult;
 import com.booksight.booksight.entity.Recommendation;
 import com.booksight.booksight.entity.Review;
 import com.booksight.booksight.entity.User;
+import com.booksight.booksight.exception.ResourceNotFoundException;
 import com.booksight.booksight.repository.BookRepository;
 import com.booksight.booksight.repository.NlpResultRepository;
 import com.booksight.booksight.repository.ReadingStatusRepository;
@@ -34,7 +35,7 @@ public class RecommendationService {
 
     public List<Recommendation> getRecommendations(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
         boolean isPersonalized = !buildUserProfile(user).isEmpty();
         List<Book> recommended = recommend(user, 10);
         return recommended.stream().map(book -> {

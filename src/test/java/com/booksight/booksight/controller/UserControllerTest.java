@@ -1,8 +1,7 @@
 package com.booksight.booksight.controller;
 
 import com.booksight.booksight.config.JwtUtil;
-import com.booksight.booksight.dto.UpdateProfileRequest;
-import com.booksight.booksight.dto.UserDTO;
+import com.booksight.booksight.dto.*;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.UserRepository;
 import com.booksight.booksight.service.UserService;
@@ -13,7 +12,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -109,5 +111,86 @@ public class UserControllerTest {
         assertNotNull(response.getBody());
         assertEquals("yeni.token", response.getBody().getToken());
         verify(userService).updateProfile(1L, request);
+    }
+
+    @Test
+    void checkin_basarili_200DonmelveDtoDonmeli() {
+        User user = createUser();
+        CheckinResponseDTO dto = new CheckinResponseDTO(3, 30, false);
+
+        when(jwtUtil.extractUsername("valid.token.here")).thenReturn("sevval");
+        when(userRepository.findByUsername("sevval")).thenReturn(Optional.of(user));
+        when(userService.checkin(1L)).thenReturn(dto);
+
+        ResponseEntity<?> response = userController.checkin("Bearer valid.token.here");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(dto, response.getBody());
+    }
+
+    @Test
+    void checkin_bugunZatenYapilmis_400Donmeli() {
+        User user = createUser();
+
+        when(jwtUtil.extractUsername("valid.token.here")).thenReturn("sevval");
+        when(userRepository.findByUsername("sevval")).thenReturn(Optional.of(user));
+        when(userService.checkin(1L)).thenThrow(new RuntimeException("Bugün zaten okuma kaydettiniz"));
+
+        ResponseEntity<?> response = userController.checkin("Bearer valid.token.here");
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Bugün zaten okuma kaydettiniz", body.get("message"));
+    }
+
+    @Test
+    void checkin_baskaBirHata_exceptionFirlatmali() {
+        User user = createUser();
+
+        when(jwtUtil.extractUsername("valid.token.here")).thenReturn("sevval");
+        when(userRepository.findByUsername("sevval")).thenReturn(Optional.of(user));
+        when(userService.checkin(1L)).thenThrow(new RuntimeException("Beklenmedik hata"));
+
+        assertThrows(RuntimeException.class, () -> userController.checkin("Bearer valid.token.here"));
+    }
+
+    @Test
+    void getCheckinStatus_200DonmelveDtoDonmeli() {
+        User user = createUser();
+        CheckinResponseDTO dto = new CheckinResponseDTO(2, 20, true);
+
+        when(jwtUtil.extractUsername("valid.token.here")).thenReturn("sevval");
+        when(userRepository.findByUsername("sevval")).thenReturn(Optional.of(user));
+        when(userService.getCheckinStatus(1L)).thenReturn(dto);
+
+        ResponseEntity<CheckinResponseDTO> response = userController.getCheckinStatus("Bearer valid.token.here");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody().isAlreadyCheckedIn());
+    }
+
+    @Test
+    void getLeaderboard_200VeListeDonmeli() {
+        LeaderboardEntryDTO entry = new LeaderboardEntryDTO(1L, "sevval", null, 100, 5);
+        when(userService.getLeaderboard()).thenReturn(List.of(entry));
+
+        ResponseEntity<List<LeaderboardEntryDTO>> response = userController.getLeaderboard();
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(1, response.getBody().size());
+        assertEquals("sevval", response.getBody().get(0).getUsername());
+    }
+
+    @Test
+    void getUserPublicProfile_200VeProfilDonmeli() {
+        UserPublicProfileDTO profile = new UserPublicProfileDTO(
+                1L, "sevval", null, 50, 2, 5, 10L,
+                List.of("Roman"), List.of());
+        when(userService.getUserPublicProfile("sevval")).thenReturn(profile);
+
+        ResponseEntity<UserPublicProfileDTO> response = userController.getUserPublicProfile("sevval");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals("sevval", response.getBody().getUsername());
     }
 }

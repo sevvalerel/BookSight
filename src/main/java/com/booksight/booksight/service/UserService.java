@@ -2,6 +2,7 @@ package com.booksight.booksight.service;
 
 import com.booksight.booksight.config.JwtUtil;
 import com.booksight.booksight.dto.*;
+import com.booksight.booksight.exception.ResourceNotFoundException;
 import com.booksight.booksight.entity.Review;
 import com.booksight.booksight.entity.User;
 import com.booksight.booksight.repository.ReadingStatusRepository;
@@ -57,7 +58,7 @@ public class UserService {
     public User findByEmailOrUsername(String emailOrUsername) {
         return userRepository.findByEmail(emailOrUsername)
                 .orElseGet(() -> userRepository.findByUsername(emailOrUsername)
-                        .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!")));
+                        .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı!")));
     }
 
     public String loginWithUser(User user, String password, JwtUtil jwtUtil) {
@@ -77,7 +78,7 @@ public class UserService {
 
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı!"));
     }
 
     public User updateProfile(Long userId, UpdateProfileRequest request) {
@@ -159,7 +160,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserPublicProfileDTO getUserPublicProfile(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı!"));
 
         List<Review> reviews = reviewRepository.findByUserIdWithBook(user.getUserId());
         long readCount = readingStatusRepository.countByUserUserIdAndStatus(user.getUserId(), "READ");

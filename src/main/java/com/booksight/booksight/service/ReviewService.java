@@ -3,6 +3,8 @@ package com.booksight.booksight.service;
 import com.booksight.booksight.entity.Book;
 import com.booksight.booksight.entity.Review;
 import com.booksight.booksight.entity.User;
+import com.booksight.booksight.exception.ForbiddenException;
+import com.booksight.booksight.exception.ResourceNotFoundException;
 import com.booksight.booksight.repository.BookRepository;
 import com.booksight.booksight.repository.ReviewRepository;
 import com.booksight.booksight.repository.UserRepository;
@@ -48,9 +50,9 @@ public class ReviewService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı!"));
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kitap bulunamadı!"));
 
         Review review = Review.builder()
                 .user(user)
@@ -71,10 +73,10 @@ public class ReviewService {
 
     public Review updateReview(Long reviewId, Long userId, String reviewText, Integer rating) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Yorum bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Yorum bulunamadı!"));
 
         if (!review.getUser().getUserId().equals(userId)) {
-            throw new RuntimeException("Bu yorumu düzenleme yetkiniz yok!");
+            throw new ForbiddenException("Bu yorumu düzenleme yetkiniz yok!");
         }
         if (reviewText == null || reviewText.length() < 50 || reviewText.length() > 2000) {
             throw new RuntimeException("Yorum 50 ile 2000 karakter arasında olmalıdır!");
@@ -94,10 +96,10 @@ public class ReviewService {
 
     public void deleteReview(Long reviewId, Long userId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Yorum bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Yorum bulunamadı!"));
 
         if (!review.getUser().getUserId().equals(userId)) {
-            throw new RuntimeException("Bu yorumu silme yetkiniz yok!");
+            throw new ForbiddenException("Bu yorumu silme yetkiniz yok!");
         }
 
         Book book = review.getBook();

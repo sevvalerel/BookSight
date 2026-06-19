@@ -3,6 +3,7 @@ package com.booksight.booksight.service;
 import com.booksight.booksight.entity.Book;
 import com.booksight.booksight.entity.ReadingStatus;
 import com.booksight.booksight.entity.User;
+import com.booksight.booksight.exception.ResourceNotFoundException;
 import com.booksight.booksight.repository.BookRepository;
 import com.booksight.booksight.repository.ReadingStatusRepository;
 import com.booksight.booksight.repository.UserRepository;
@@ -34,9 +35,9 @@ public class ReadingStatusService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı!"));
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kitap bulunamadı!"));
 
         ReadingStatus existing = readingStatusRepository
                 .findByUserUserIdAndBookBookId(userId, bookId)
@@ -63,14 +64,14 @@ public class ReadingStatusService {
 
     public List<ReadingStatus> getMyLibrary(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("Kullanıcı bulunamadı!");
+            throw new ResourceNotFoundException("Kullanıcı bulunamadı!");
         }
         return readingStatusRepository.findByUserUserId(userId);
     }
 
     public void removeFromLibrary(Long userId, Long bookId) {
         if (!readingStatusRepository.findByUserUserIdAndBookBookId(userId, bookId).isPresent()) {
-            throw new RuntimeException("Kitap kütüphanede bulunamadı!");
+            throw new ResourceNotFoundException("Kitap kütüphanede bulunamadı!");
         }
         readingStatusRepository.deleteByUserUserIdAndBookBookId(userId, bookId);
     }
