@@ -6,6 +6,7 @@ import com.booksight.booksight.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,12 +20,15 @@ public class BookService {
         this.bookRepository = bookRepository;
     }
 
-    public Map<String, Object> getAllBooks(String search, String genre, Double minRating, int page, int size) {
+    public Map<String, Object> getAllBooks(String search, String genre, List<String> genres, Double minRating, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Book> bookPage;
 
         if (search != null && !search.isBlank()) {
             bookPage = bookRepository.searchBooks(search, pageable);
+        } else if (genres != null && !genres.isEmpty()) {
+            String pattern = String.join("|", genres);
+            bookPage = bookRepository.findByGenrePattern(pattern, pageable);
         } else if (minRating != null) {
             bookPage = bookRepository.findByMinRating(minRating, pageable);
         } else if (genre != null && !genre.isBlank()) {

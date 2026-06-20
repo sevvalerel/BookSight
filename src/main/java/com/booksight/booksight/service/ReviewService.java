@@ -107,7 +107,11 @@ public class ReviewService {
         updateBookRating(book);
     }
 
-    public List<Review> getReviewsByBook(Long bookId) {
+    public List<Review> getReviewsByBook(Long bookId, String sortBy) {
+        if ("rating_desc".equals(sortBy))
+            return reviewRepository.findByBookBookIdOrderByRatingDescCreatedAtDesc(bookId);
+        if ("rating_asc".equals(sortBy))
+            return reviewRepository.findByBookBookIdOrderByRatingAscCreatedAtDesc(bookId);
         return reviewRepository.findByBookBookIdOrderByCreatedAtDesc(bookId);
     }
 

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/books")
@@ -22,10 +23,11 @@ public class BookController {
     public ResponseEntity<Map<String, Object>> getAllBooks(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String genre,
+            @RequestParam(required = false) List<String> genres,
             @RequestParam(required = false) Double minRating,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(bookService.getAllBooks(search, genre, minRating, page, size));
+        return ResponseEntity.ok(bookService.getAllBooks(search, genre, genres, minRating, page, size));
     }
 
     @GetMapping("/{id}")

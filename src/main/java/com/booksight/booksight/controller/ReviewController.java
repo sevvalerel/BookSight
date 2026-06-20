@@ -59,8 +59,10 @@ public class ReviewController {
     }
 
     @GetMapping("/book/{bookId}")
-    public ResponseEntity<List<ReviewDTO>> getReviewsByBook(@PathVariable Long bookId) {
-        List<Review> reviews = reviewService.getReviewsByBook(bookId);
+    public ResponseEntity<List<ReviewDTO>> getReviewsByBook(
+            @PathVariable Long bookId,
+            @RequestParam(required = false, defaultValue = "date_desc") String sortBy) {
+        List<Review> reviews = reviewService.getReviewsByBook(bookId, sortBy);
         List<ReviewDTO> dtos = reviews.stream()
                 .map(r -> new ReviewDTO(
                         r.getReviewId(),

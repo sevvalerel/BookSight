@@ -11,6 +11,8 @@ import java.util.List;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByBookBookIdOrderByCreatedAtDesc(Long bookId);
+    List<Review> findByBookBookIdOrderByRatingDescCreatedAtDesc(Long bookId);
+    List<Review> findByBookBookIdOrderByRatingAscCreatedAtDesc(Long bookId);
     List<Review> findByUserUserId(Long userId);
     List<Review> findByUserUserIdOrderByCreatedAtDesc(Long userId);
     boolean existsByUserUserIdAndBookBookId(Long userId, Long bookId);

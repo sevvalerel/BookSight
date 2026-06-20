@@ -171,18 +171,18 @@ class ReviewControllerTest {
         Review r1 = makeReview(1L, user, book, "Birinci yorum metni buraya yazıldı.", 5);
         Review r2 = makeReview(2L, user, book, "İkinci yorum metni buraya yazıldı.", 3);
 
-        when(reviewService.getReviewsByBook(10L)).thenReturn(List.of(r1, r2));
+        when(reviewService.getReviewsByBook(10L, "date_desc")).thenReturn(List.of(r1, r2));
 
-        ResponseEntity<?> response = reviewController.getReviewsByBook(10L);
+        ResponseEntity<?> response = reviewController.getReviewsByBook(10L, "date_desc");
 
         assertEquals(200, response.getStatusCode().value());
     }
 
     @Test
     void getReviewsByBook_bosListe_donmeli() {
-        when(reviewService.getReviewsByBook(99L)).thenReturn(List.of());
+        when(reviewService.getReviewsByBook(99L, "date_desc")).thenReturn(List.of());
 
-        ResponseEntity<?> response = reviewController.getReviewsByBook(99L);
+        ResponseEntity<?> response = reviewController.getReviewsByBook(99L, "date_desc");
 
         assertEquals(200, response.getStatusCode().value());
     }

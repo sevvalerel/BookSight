@@ -208,7 +208,7 @@ public class ReviewServiceTest {
                 .thenReturn(List.of(r1, r2));
 
         // ACT
-        List<Review> result = reviewService.getReviewsByBook(10L);
+        List<Review> result = reviewService.getReviewsByBook(10L, "date_desc");
 
         // ASSERT
         assertEquals(2, result.size());
@@ -222,7 +222,7 @@ public class ReviewServiceTest {
                 .thenReturn(List.of());
 
         // ACT
-        List<Review> result = reviewService.getReviewsByBook(10L);
+        List<Review> result = reviewService.getReviewsByBook(10L, "date_desc");
 
         // ASSERT
         assertNotNull(result);

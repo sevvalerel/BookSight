@@ -8,7 +8,7 @@ import com.booksight.booksight.repository.UserRepository;
 import com.booksight.booksight.service.EmailService;
 import com.booksight.booksight.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
@@ -24,12 +24,12 @@ public class AuthController {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository resetTokenRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthController(UserService userService, JwtUtil jwtUtil,
                           EmailService emailService, UserRepository userRepository,
                           PasswordResetTokenRepository resetTokenRepository,
-                          BCryptPasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.emailService = emailService;
