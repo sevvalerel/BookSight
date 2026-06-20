@@ -54,12 +54,14 @@ public class AuthController {
         User user = userService.register(username.trim(), email.trim(), password);
         String token = jwtUtil.generateToken(user.getUsername());
 
-        // Hoş geldin maili gönder
-        try {
-            emailService.sendWelcomeEmail(email, username);
-        } catch (Exception e) {
-            // Mail gönderilemezse kayıt yine başarılı olsun
-        }
+        // Hoş geldin maili arka planda gönder (response'u bloklamasın)
+        final String finalEmail = email;
+        final String finalUsername = username;
+        new Thread(() -> {
+            try {
+                emailService.sendWelcomeEmail(finalEmail, finalUsername);
+            } catch (Exception ignored) {}
+        }).start();
 
         return ResponseEntity.ok(Map.of(
                 "message", "Kayıt başarılı!",
